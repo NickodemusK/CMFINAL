@@ -4,6 +4,14 @@ from sshtunnel import SSHTunnelForwarder
 import psycopg
 import bcrypt
 import os
+import uuid
+from dotenv import load_dotenv
+
+# Load .env first
+load_dotenv()
+
+# S3 config
+from s3_config import s3, BUCKET_NAME, AWS_REGION
 
 app = Flask(__name__)
 CORS(app)
@@ -25,17 +33,14 @@ tunnel = None
 
 
 def start_ssh_tunnel():
-    """Start SSH tunnel to EC2 for RDS access."""
     global tunnel
     if tunnel is None or not tunnel.is_active:
-        # Use port 0 to let the system assign an available port
-        # This prevents conflicts when Flask restarts in debug mode
         tunnel = SSHTunnelForwarder(
             (SSH_HOST, 22),
             ssh_username=SSH_USER,
             ssh_pkey=SSH_KEY_PATH,
             remote_bind_address=(RDS_HOST, RDS_PORT),
-            local_bind_address=("127.0.0.1", 0)  # 0 = auto-assign available port
+            local_bind_address=("127.0.0.1", 0)
         )
         tunnel.start()
         print(f"SSH tunnel established on local port {tunnel.local_bind_port}")
@@ -43,7 +48,6 @@ def start_ssh_tunnel():
 
 
 def get_db_connection():
-    """Get database connection through SSH tunnel."""
     tun = start_ssh_tunnel()
     conn = psycopg.connect(
         host="127.0.0.1",
@@ -56,10 +60,10 @@ def get_db_connection():
 
 
 def init_db():
-    """Initialize the database with users table."""
     try:
         conn = get_db_connection()
         cur = conn.cursor()
+
         cur.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -69,38 +73,35 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
         conn.commit()
         cur.close()
         conn.close()
         print("Database initialized successfully!")
+
     except Exception as e:
         print(f"Error initializing database: {e}")
 
 
 @app.route("/api/auth/register", methods=["POST"])
 def register():
-    """Register a new user."""
     try:
         data = request.get_json()
         email = data.get("email", "").strip()
         username = data.get("username", "").strip()
         password = data.get("password", "")
 
-        # Validation
         if not email or not username or not password:
             return jsonify({"error": "Email, username, and password are required."}), 400
 
         if not email.lower().endswith("@my.hamptonu.edu"):
             return jsonify({"error": "Email must end with @my.hamptonu.edu."}), 400
 
-        # Hash password
         password_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
-        # Insert into database
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Check if username or email already exists
         cur.execute("SELECT id FROM users WHERE LOWER(username) = LOWER(%s)", (username,))
         if cur.fetchone():
             cur.close()
@@ -113,7 +114,6 @@ def register():
             conn.close()
             return jsonify({"error": "That email already has an account."}), 409
 
-        # Insert new user
         cur.execute(
             "INSERT INTO users (email, username, password_hash) VALUES (%s, %s, %s) RETURNING id",
             (email.lower(), username, password_hash)
@@ -132,7 +132,6 @@ def register():
 
 @app.route("/api/auth/login", methods=["POST"])
 def login():
-    """Authenticate a user."""
     try:
         data = request.get_json()
         username = data.get("username", "").strip()
@@ -144,7 +143,6 @@ def login():
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Find user by username
         cur.execute(
             "SELECT id, username, password_hash FROM users WHERE LOWER(username) = LOWER(%s)",
             (username,)
@@ -158,13 +156,15 @@ def login():
 
         user_id, db_username, password_hash = user
 
-        # Verify password
         if not bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8")):
             return jsonify({"error": "Invalid username or password."}), 401
 
         return jsonify({
             "message": "Login successful!",
-            "user": {"id": user_id, "username": db_username}
+            "user": {
+                "id": user_id,
+                "username": db_username
+            }
         }), 200
 
     except Exception as e:
@@ -172,9 +172,53 @@ def login():
         return jsonify({"error": "An error occurred during login."}), 500
 
 
+# ---------------- S3 PRESIGN ROUTE ----------------
+@app.route("/api/uploads/presign", methods=["POST"])
+def presign_upload():
+    try:
+        data = request.get_json()
+        file_name = data.get("fileName")
+        file_type = data.get("fileType")
+
+        print("BUCKET_NAME =", BUCKET_NAME)
+        print("AWS_REGION =", AWS_REGION)
+
+        if not file_name or not file_type:
+            return jsonify({"error": "fileName and fileType are required"}), 400
+
+        if not BUCKET_NAME or not AWS_REGION:
+            return jsonify({"error": "S3 environment variables are not configured correctly"}), 500
+
+        ext = file_name.split(".")[-1].lower()
+        key = f"listings/{uuid.uuid4()}.{ext}"
+
+        upload_url = s3.generate_presigned_url(
+            ClientMethod="put_object",
+            Params={
+                "Bucket": BUCKET_NAME,
+                "Key": key,
+                "ContentType": file_type
+            },
+            ExpiresIn=300,
+            HttpMethod="PUT"
+        )
+
+        image_url = f"https://{BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{key}"
+
+        return jsonify({
+            "uploadUrl": upload_url,
+            "key": key,
+            "imageUrl": image_url
+        }), 200
+
+    except Exception as e:
+        print(f"Presign error: {e}")
+        return jsonify({"error": "Failed to generate presigned URL"}), 500
+# --------------------------------------------------
+
+
 @app.route("/api/health", methods=["GET"])
 def health_check():
-    """Health check endpoint."""
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -189,9 +233,8 @@ def health_check():
 if __name__ == "__main__":
     print("Starting CloudMart Backend...")
     print(f"SSH Key Path: {SSH_KEY_PATH}")
-    
-    # Initialize database on startup
+    print(f"S3 Bucket: {BUCKET_NAME}")
+    print(f"AWS Region: {AWS_REGION}")
+
     init_db()
-    
-    # Run Flask app on port 5001 (5000 often used by AirPlay on macOS)
     app.run(host="0.0.0.0", port=5001, debug=True)
