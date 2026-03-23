@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CloudMart Marketplace</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+  <!-- Top Navigation -->
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="#">
+        <img
+          src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Logo.png"
+          alt="CloudMart Logo"
+          class="logo"
+        />
+        <span>CloudMart</span>
+      </a>
+
+      <nav class="nav-menu">
+        <a href="#wishlist">Wishlist</a>
+        <a href="#profile">Profile</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="marketplace-layout">
+
+    <!-- Sidebar Filters -->
+    <aside class="filters">
+      <h3>Marketplace</h3>
+
+      <input
+        type="text"
+        placeholder="Search listings"
+        class="filter-input"
+      />
+
+      <div class="filter-group">
+        <h4>Category</h4>
+        <label><input type="checkbox" /> Electronics</label>
+        <label><input type="checkbox" /> Books</label>
+        <label><input type="checkbox" /> Furniture</label>
+        <label><input type="checkbox" /> Appliances</label>
+      </div>
+
+      <div class="filter-group">
+        <h4>Price</h4>
+        <label><input type="radio" name="price" /> Under $50</label>
+        <label><input type="radio" name="price" /> $50 – $100</label>
+        <label><input type="radio" name="price" /> $100+</label>
+      </div>
+
+      <button class="btn btn-primary full">Apply Filters</button>
+    </aside>
+
+    <!-- Listings Feed -->
+    <section class="listings">
+      <h2>Today’s Picks</h2>
+
+      <div class="grid-3">
+
+        <!-- CSC 405 Textbook -->
+        <article class="feature-card product-card">
+          <img
+            src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Img.png"
+            class="product-img product-img-small"
+            alt="CSC 405 Textbook"
+          />
+          <h3>CSC 405 Textbook</h3>
+          <p class="muted">$45 • Like new</p>
+          <button class="btn btn-outline full">Add to Wishlist</button>
+        </article>
+
+        <!-- Mini Fridge -->
+        <article class="feature-card product-card">
+          <img
+            src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Calc"
+            class="product-img product-img-small"
+            alt="Mini Fridge"
+          />
+          <h3>Mini Fridge</h3>
+          <p class="muted">$80 • Good condition</p>
+          <button class="btn btn-outline full">Add to Wishlist</button>
+        </article>
+
+        <!-- Calculator -->
+        <article class="feature-card product-card">
+          <img
+            src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Fridge"
+            class="product-img product-img-small"
+            alt="Scientific Calculator"
+          />
+          <h3>Scientific Calculator</h3>
+          <p class="muted">$20 • Fully functional</p>
+          <button class="btn btn-outline full">Add to Wishlist</button>
+        </article>
+
+      </div>
+    </section>
+    <section id="wishlist" class="wishlist">
+        <h2>Your Wishlist</h2>
+        <p class="muted">Saved items stay here for later.</p>
+
+        <div id="wishlistEmpty" class="muted">
+          No saved items yet. Click “Add to Wishlist” on a listing.
+        </div>
+
+        <div id="wishlistGrid" class="grid-3"></div>
+      </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-bottom">
+      <small class="muted">© 2026 CloudMart. All rights reserved.</small>
+    </div>
+  </footer>
+
+</body>
+</html>

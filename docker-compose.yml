@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    container_name: campus_marketplace_db
+    environment:
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: apppass
+      POSTGRES_DB: campus_marketplace
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:

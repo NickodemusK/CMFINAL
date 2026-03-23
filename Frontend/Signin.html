@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CloudMart | Sign in</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: #e8eefc;
+      background:
+        radial-gradient(1200px 600px at 20% 10%, #1a3a7a 0%, rgba(26, 58, 122, 0) 60%),
+        radial-gradient(900px 500px at 80% 30%, #0b5aa8 0%, rgba(11, 90, 168, 0) 55%),
+        linear-gradient(180deg, #060b1a 0%, #050814 100%);
+      min-height: 100vh;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(10px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: inherit;
+      font-weight: 700;
+    }
+
+    .nav-logo {
+      max-height: 36px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 14px;
+    }
+
+    .nav-links a {
+      color: rgba(232, 238, 252, 0.85);
+      text-decoration: none;
+    }
+
+    .nav-links a:hover {
+      color: #ffffff;
+    }
+
+    .nav-btn {
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.05);
+      color: #e8eefc;
+      font-weight: 600;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.10);
+    }
+
+    .page {
+      display: grid;
+      place-items: center;
+      padding: 60px 16px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      padding: 22px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(10px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .card-logo {
+      width: 40px;
+      height: auto;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin: 0;
+    }
+
+    .sub {
+      margin: 10px 0 18px;
+      font-size: 14px;
+      color: rgba(232, 238, 252, 0.8);
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      margin: 12px 0 6px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(0, 0, 0, 0.25);
+      color: #e8eefc;
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    input:focus {
+      border-color: rgba(64, 150, 255, 0.65);
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-top: 10px;
+      color: rgba(232, 238, 252, 0.75);
+    }
+
+    .row a {
+      color: rgba(232, 238, 252, 0.85);
+      text-decoration: none;
+    }
+
+    .row a:hover {
+      color: #fff;
+    }
+
+    .btn {
+      width: 100%;
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: linear-gradient(180deg, #0b5aa8 0%, #0a2d63 100%);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      filter: brightness(1.05);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .msg {
+      margin-top: 12px;
+      font-size: 13px;
+      min-height: 18px;
+    }
+
+    .msg.success {
+      color: #4ade80;
+    }
+
+    .msg.error {
+      color: #f87171;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="nav">
+    <a href="index.html" class="brand">
+      <img src="../Resources/Images/Logo.png" class="nav-logo" alt="CloudMart Logo">
+      <span>CloudMart</span>
+    </a>
+
+    <nav class="nav-links">
+      <a href="index.html">Features</a>
+      <a href="index.html">How it works</a>
+      <a href="index.html">FAQ</a>
+      <a class="nav-btn" href="Signin.html">Sign in</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="card">
+      <div class="card-header">
+        <img src="../Resources/Images/Logo.png" class="card-logo" alt="CloudMart Logo">
+        <h1 id="modeTitle">Sign in</h1>
+      </div>
+
+      <p class="sub" id="modeSub">Enter your username and password to continue.</p>
+
+      <div id="emailWrap" style="display:none;">
+        <label>Email (must be @my.hamptonu.edu)</label>
+        <input id="email" type="email" placeholder="nick@my.hamptonu.edu">
+      </div>
+
+      <label>Username</label>
+      <input id="username" type="text" placeholder="Choose a username">
+
+      <label>Password</label>
+      <input id="password" type="password" placeholder="Choose a password">
+
+      <div class="row">
+        <span id="hintText">Use your created account</span>
+        <a href="#" id="toggleMode">Create an account</a>
+      </div>
+
+      <button class="btn" id="primaryBtn">Sign in</button>
+
+      <div class="msg" id="message"></div>
+    </section>
+  </main>
+
+  <script>
+    // ===== API Configuration =====
+    const API_BASE = "http://localhost:5001";
+
+    const emailWrap = document.getElementById("emailWrap");
+    const modeTitle = document.getElementById("modeTitle");
+    const modeSub = document.getElementById("modeSub");
+    const hintText = document.getElementById("hintText");
+    const toggleMode = document.getElementById("toggleMode");
+    const primaryBtn = document.getElementById("primaryBtn");
+    const message = document.getElementById("message");
+
+    const emailInput = document.getElementById("email");
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+
+    let isCreateMode = false;
+
+    function setMsg(text, isError = true) {
+      message.innerText = text;
+      message.className = "msg " + (isError ? "error" : "success");
+    }
+
+    function clearMsg() {
+      message.innerText = "";
+      message.className = "msg";
+    }
+
+    function validHamptonEmail(email) {
+      return typeof email === "string" && email.toLowerCase().endsWith("@my.hamptonu.edu");
+    }
+
+    function toggleUI() {
+      isCreateMode = !isCreateMode;
+
+      if (isCreateMode) {
+        modeTitle.innerText = "Create account";
+        modeSub.innerText = "Create your CloudMart account using a Hampton email.";
+        emailWrap.style.display = "block";
+        primaryBtn.innerText = "Create account";
+        toggleMode.innerText = "Already have an account? Sign in";
+        hintText.innerText = "Email must be @my.hamptonu.edu";
+      } else {
+        modeTitle.innerText = "Sign in";
+        modeSub.innerText = "Enter your username and password to continue.";
+        emailWrap.style.display = "none";
+        primaryBtn.innerText = "Sign in";
+        toggleMode.innerText = "Create an account";
+        hintText.innerText = "Use your created account";
+      }
+      clearMsg();
+    }
+
+    toggleMode.addEventListener("click", function (e) {
+      e.preventDefault();
+      toggleUI();
+    });
+
+    async function postJSON(endpoint, data) {
+      const res = await fetch(API_BASE + endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      const payload = await res.json();
+
+      if (!res.ok) {
+        throw new Error(payload.error || `Request failed (${res.status})`);
+      }
+
+      return payload;
+    }
+
+    primaryBtn.addEventListener("click", async function () {
+      const email = emailInput ? emailInput.value.trim() : "";
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!username || !password) {
+        setMsg("Please enter a username and password.");
+        return;
+      }
+
+      primaryBtn.disabled = true;
+      clearMsg();
+
+      try {
+        if (isCreateMode) {
+          if (!email) {
+            throw new Error("Please enter your Hampton email.");
+          }
+          if (!validHamptonEmail(email)) {
+            throw new Error("Email must end with @my.hamptonu.edu.");
+          }
+
+          await postJSON("/api/auth/register", { email, username, password });
+          setMsg("Account created! Switch to Sign in and log in.", false);
+
+        } else {
+          const result = await postJSON("/api/auth/login", { username, password });
+          
+          localStorage.setItem("isLoggedIn", "true");
+          localStorage.setItem("currentUser", result.user.username);
+          localStorage.setItem("userId", result.user.id);
+
+          window.location.href = "index.html";
+        }
+      } catch (err) {
+        setMsg(err.message || "Something went wrong.");
+      } finally {
+        primaryBtn.disabled = false;
+      }
+    });
+
+    document.addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        primaryBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>
