@@ -6,50 +6,50 @@
   <title>Create Listing</title>
   <link rel="stylesheet" href="styles.css" />
   <style>
-    /* Match index.html background and font */
-    body { 
-      margin: 0; 
-      font-family: Arial; 
-      background: #0b1020; 
-      color: #fff; 
-      display: flex; 
-      justify-content: center; 
-      align-items: center; 
-      min-height: 100vh; 
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0b1020;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
     }
 
     .create-container {
-      background: #111; 
-      padding: 30px; 
-      border-radius: 10px; 
-      width: 350px; 
-      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      background: #111;
+      padding: 30px;
+      border-radius: 10px;
+      width: 350px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     }
 
-    .create-container h2 { 
-      text-align: center; 
-      margin-bottom: 20px; 
+    .create-container h2 {
+      text-align: center;
+      margin-bottom: 20px;
     }
 
-    .create-container input, 
+    .create-container input,
     .create-container select {
-      width: 100%; 
-      padding: 8px; 
-      margin-bottom: 15px; 
-      border-radius: 5px; 
-      border: none; 
-      background: #1e2438; 
-      color: #fff; 
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: none;
+      background: #1e2438;
+      color: #fff;
+      box-sizing: border-box;
     }
 
     .btn-primary {
-      width: 100%; 
-      padding: 10px; 
-      background: #007bff; 
-      border: none; 
-      color: #fff; 
-      border-radius: 5px; 
-      cursor: pointer; 
+      width: 100%;
+      padding: 10px;
+      background: #007bff;
+      border: none;
+      color: #fff;
+      border-radius: 5px;
+      cursor: pointer;
       font-size: 16px;
     }
 
@@ -64,7 +64,7 @@
     <h2>Create Listing</h2>
 
     <input id="title" placeholder="Title" />
-    <input id="price" placeholder="Price" type="number" />
+    <input id="price" placeholder="Price" type="number" step="0.01" />
 
     <select id="category">
       <option>Electronics</option>
@@ -78,33 +78,92 @@
       <option>Used</option>
     </select>
 
-    <input id="image" placeholder="Image URL" />
+    <input id="image" type="file" accept="image/*" />
 
     <button class="btn-primary" onclick="submitListing()">Create</button>
   </div>
 
   <script>
-    async function submitListing(){
-      const user = JSON.parse(localStorage.getItem("user"));
+    async function uploadImageToS3(file) {
+      console.log("Selected file:", file.name);
+      console.log("Detected file type:", file.type);
 
-      if (!user) {
+      const presignRes = await fetch("http://localhost:5001/api/uploads/presign", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type
+        })
+      });
+
+      if (!presignRes.ok) {
+        const errText = await presignRes.text();
+        throw new Error("Failed to get presigned URL: " + errText);
+      }
+
+      const { uploadUrl, imageUrl, key } = await presignRes.json();
+
+      console.log("Presign response:", { uploadUrl, imageUrl, key });
+
+      const uploadRes = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file
+      });
+
+      if (!uploadRes.ok) {
+        const errText = await uploadRes.text();
+        throw new Error("Failed to upload image to S3: " + errText);
+      }
+
+      return imageUrl;
+    }
+
+    async function submitListing() {
+      const isLoggedIn = localStorage.getItem("isLoggedIn");
+      const userId = localStorage.getItem("userId");
+
+      if (isLoggedIn !== "true" || !userId) {
         alert("You must be logged in to create a listing!");
         return;
       }
 
-      const listing = {
-        user_id: user.id,
-        title: document.getElementById("title").value,
-        price: parseFloat(document.getElementById("price").value),
-        category: document.getElementById("category").value,
-        condition: document.getElementById("condition").value,
-        image: document.getElementById("image").value
-      };
+      const title = document.getElementById("title").value.trim();
+      const price = parseFloat(document.getElementById("price").value);
+      const category = document.getElementById("category").value;
+      const condition = document.getElementById("condition").value;
+      const imageFile = document.getElementById("image").files[0];
+
+      if (!title || isNaN(price)) {
+        alert("Please enter a valid title and price.");
+        return;
+      }
+
+      let imageUrl = "https://picsum.photos/300";
 
       try {
+        if (imageFile) {
+          imageUrl = await uploadImageToS3(imageFile);
+        }
+
+        const listing = {
+          user_id: parseInt(userId),
+          title: title,
+          price: price,
+          category: category,
+          condition: condition,
+          image: imageUrl
+        };
+
+        console.log("Listing payload:", listing);
+
         const res = await fetch("http://localhost:5001/api/listings", {
           method: "POST",
-          headers: {"Content-Type": "application/json"},
+          headers: {
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify(listing)
         });
 
@@ -112,11 +171,12 @@
           alert("Listing created successfully!");
           window.location.href = "index.html";
         } else {
-          alert("Failed to create listing.");
+          const errText = await res.text();
+          throw new Error("Failed to save listing: " + errText);
         }
       } catch (err) {
-        console.error("Error:", err);
-        alert("Error creating listing.");
+        console.error("Error creating listing:", err);
+        alert("Error creating listing: " + err.message);
       }
     }
   </script>

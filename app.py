@@ -4,6 +4,14 @@ from sshtunnel import SSHTunnelForwarder
 import psycopg
 import bcrypt
 import os
+import uuid
+from dotenv import load_dotenv
+
+# Load environment variables from .env
+load_dotenv()
+
+# S3 config
+from s3_config import s3, BUCKET_NAME, AWS_REGION
 
 app = Flask(__name__)
 CORS(app)
@@ -20,6 +28,7 @@ DB_PASSWORD = "password"
 
 tunnel = None
 
+
 def start_ssh_tunnel():
     global tunnel
     if tunnel is None or not tunnel.is_active:
@@ -33,6 +42,7 @@ def start_ssh_tunnel():
         tunnel.start()
     return tunnel
 
+
 def get_db_connection():
     tun = start_ssh_tunnel()
     return psycopg.connect(
@@ -42,6 +52,7 @@ def get_db_connection():
         user=DB_USER,
         password=DB_PASSWORD
     )
+
 
 def init_db():
     conn = get_db_connection()
@@ -72,6 +83,7 @@ def init_db():
     cur.close()
     conn.close()
 
+
 # AUTH
 @app.route("/api/auth/register", methods=["POST"])
 def register():
@@ -93,6 +105,7 @@ def register():
 
     return jsonify({"user_id": user_id}), 201
 
+
 @app.route("/api/auth/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -110,6 +123,47 @@ def login():
         return jsonify({"error": "Invalid credentials"}), 401
 
     return jsonify({"user": {"id": user[0], "username": user[1]}})
+
+
+# S3 PRESIGN ROUTE
+@app.route("/api/uploads/presign", methods=["POST"])
+def presign_upload():
+    try:
+        data = request.get_json()
+        file_name = data.get("fileName")
+        file_type = data.get("fileType")
+
+        if not file_name:
+            return jsonify({"error": "fileName is required"}), 400
+
+        if not BUCKET_NAME or not AWS_REGION:
+            return jsonify({"error": "S3 environment variables are not configured correctly"}), 500
+
+        ext = file_name.split(".")[-1].lower()
+        key = f"listings/{uuid.uuid4()}.{ext}"
+
+        upload_url = s3.generate_presigned_url(
+            ClientMethod="put_object",
+            Params={
+                "Bucket": BUCKET_NAME,
+                "Key": key
+            },
+            ExpiresIn=300,
+            HttpMethod="PUT"
+        )
+
+        image_url = f"https://{BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{key}"
+
+        return jsonify({
+            "uploadUrl": upload_url,
+            "key": key,
+            "imageUrl": image_url
+        }), 200
+
+    except Exception as e:
+        print(f"Presign error: {e}")
+        return jsonify({"error": "Failed to generate presigned URL"}), 500
+
 
 # CREATE LISTING
 @app.route("/api/listings", methods=["POST"])
@@ -131,6 +185,7 @@ def create_listing():
     conn.close()
 
     return jsonify({"message": "Listing created"}), 201
+
 
 # GET LISTINGS
 @app.route("/api/listings", methods=["GET"])
@@ -170,6 +225,7 @@ def get_listings():
         }
         for r in rows
     ])
+
 
 if __name__ == "__main__":
     init_db()
