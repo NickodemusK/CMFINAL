@@ -1,72 +1,33 @@
-/* ================= BASIC RESET ================= */
+/* RESET */
 * {
   box-sizing: border-box;
 }
 
-html,
 body {
   margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  line-height: 1.5;
+  font-family: system-ui, Arial;
   background: #0b1020;
-  color: #eef2ff;
+  color: #fff;
 }
 
-/* ================= VARIABLES ================= */
-:root {
-  --bg: #0a2342;
-  --panel: rgba(255, 255, 255, 0.08);
-  --panel-2: rgba(255, 255, 255, 0.12);
-  --border: rgba(255, 255, 255, 0.18);
-  --muted: rgba(255, 255, 255, 0.78);
-
-  --accent: #003a8f;
-  --accent-2: #ffffff;
-  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-}
-
-/* ================= UTILITIES ================= */
-.container {
-  width: min(1100px, 92%);
-  margin: 0 auto;
-}
-
-.muted {
-  color: var(--muted);
-}
-
-.full {
-  width: 100%;
-}
-
-/* ================= HEADER ================= */
+/* HEADER */
 .site-header {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: rgba(11, 16, 32, 0.85);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--border);
+  background: #111827;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
 .nav {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 14px 0;
+  align-items: center;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-weight: 800;
-  text-decoration: none;
-  color: #fff;
+  font-weight: bold;
 }
 
 .logo {
@@ -75,152 +36,119 @@ body {
 
 .nav-menu {
   display: flex;
-  gap: 18px;
-}
-
-.nav-menu a {
-  text-decoration: none;
-  color: rgba(238, 242, 255, 0.85);
-  font-weight: 600;
-}
-
-.nav-menu a:hover {
-  color: #fff;
-}
-
-/* ================= BUTTONS ================= */
-.btn {
-  display: inline-flex;
+  gap: 10px;
   align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-weight: 800;
+}
+
+/* BUTTONS */
+.btn {
+  padding: 10px;
+  border-radius: 10px;
   cursor: pointer;
+  font-weight: bold;
 }
 
 .btn-primary {
-  background: var(--accent);
-  color: #fff;
-  box-shadow: var(--shadow);
+  background: #2563eb;
   border: none;
+  color: white;
 }
 
 .btn-outline {
-  border: 1px solid #fff;
+  border: 1px solid white;
   background: transparent;
-  color: #fff;
+  color: white;
 }
 
-.btn-outline:hover {
-  background: rgba(255, 255, 255, 0.1);
+.full {
+  width: 100%;
 }
 
-/* ================= MARKETPLACE LAYOUT ================= */
-.marketplace-layout {
+/* LAYOUT */
+.fb-layout {
   display: grid;
   grid-template-columns: 260px 1fr;
-  gap: 20px;
-  padding: 30px 20px;
+  height: calc(100vh - 70px);
 }
 
-/* ================= FILTER SIDEBAR ================= */
-.filters {
-  border: 1px solid var(--border);
-  background: var(--panel);
-  border-radius: 18px;
-  padding: 18px;
-  height: fit-content;
+/* SIDEBAR */
+.fb-sidebar {
+  padding: 20px;
+  background: #111827;
+  border-right: 1px solid rgba(255,255,255,0.1);
 }
 
-.filters h3 {
-  margin-top: 0;
-}
-
-.filter-input {
+.fb-search {
   width: 100%;
   padding: 10px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: #fff;
-  margin-bottom: 16px;
+  border-radius: 20px;
+  border: none;
+  margin-bottom: 15px;
+  background: #1f2937;
+  color: white;
 }
 
-.filter-group {
-  margin-bottom: 16px;
+.fb-section {
+  margin-top: 20px;
 }
 
-.filter-group h4 {
+.fb-section label {
+  display: block;
   margin-bottom: 8px;
 }
 
-.filter-group label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 0.9rem;
+/* CONTENT */
+.fb-content {
+  padding: 20px;
+  overflow-y: auto;
 }
 
-/* ================= LISTINGS ================= */
-.listings h2 {
-  margin-top: 0;
-}
-
-/* ================= GRID & CARDS ================= */
-.grid-3 {
+/* GRID */
+.fb-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
+  margin-top: 15px;
 }
 
+/* CARD */
 .feature-card {
-  border: 1px solid var(--border);
-  background: var(--panel);
-  border-radius: 18px;
-  padding: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  background: #111827;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: 0.2s;
 }
 
-.feature-card h3 {
-  margin: 0;
+.feature-card:hover {
+  transform: scale(1.02);
 }
 
-/* ================= PRODUCT IMAGES ================= */
 .product-img {
   width: 100%;
   height: 180px;
   object-fit: cover;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
 }
 
-/* Smaller textbook image only */
-.product-img-small {
-  height: 130px;
-  object-fit: contain;
+.card-body {
   padding: 10px;
 }
 
-/* ================= FOOTER ================= */
-.site-footer {
-  border-top: 1px solid var(--border);
-  padding: 24px 0;
-  margin-top: 40px;
+.price {
+  font-weight: bold;
 }
 
-.footer-bottom {
-  text-align: center;
+.condition {
+  font-size: 0.85rem;
+  color: #9ca3af;
 }
 
-/* ================= RESPONSIVE ================= */
+/* RESPONSIVE */
 @media (max-width: 900px) {
-  .marketplace-layout {
+  .fb-layout {
     grid-template-columns: 1fr;
   }
 
-  .grid-3 {
-    grid-template-columns: 1fr;
+  .fb-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

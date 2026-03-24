@@ -1,125 +1,197 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CloudMart Marketplace</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CloudMart Marketplace</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+/* RESET */
+* { box-sizing: border-box; margin:0; padding:0; }
+body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #fff; line-height:1.5; }
 
+/* HEADER */
+.site-header {
+  background: #111827;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  justify-content: space-between; /* logo left, buttons right */
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.brand { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 1.2rem; color: white; }
+.logo { height: 40px; }
+
+.nav-menu { display: flex; gap: 10px; align-items: center; }
+
+/* BUTTONS */
+.btn { padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition:0.2s; }
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: #2563eb; border: none; color: white; }
+.btn-secondary { background: #10b981; border: none; color: white; }
+.btn-outline { border: 1px solid white; background: transparent; color: white; }
+.full { width: 100%; }
+
+/* LAYOUT */
+.fb-layout { display: grid; grid-template-columns: 260px 1fr; height: calc(100vh - 70px); }
+
+/* SIDEBAR */
+.fb-sidebar {
+  padding: 20px;
+  background: #111827;
+  border-right: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.fb-search {
+  width: 100%; padding: 10px 15px; border-radius: 999px; border: none; background: #1f2937; color: white; outline: none;
+}
+.fb-section h4 { margin-bottom: 10px; font-weight: bold; }
+.fb-section label { display: block; margin-bottom: 8px; cursor: pointer; font-size: 0.95rem; }
+
+/* CONTENT */
+.fb-content { padding: 20px; overflow-y: auto; }
+.fb-topbar h2 { font-size: 1.5rem; margin-bottom: 15px; }
+
+/* GRID */
+.fb-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+
+/* CARD */
+.feature-card {
+  background: #111827;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+.feature-card:hover { transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+.product-img { width: 100%; height: 180px; object-fit: cover; }
+.card-body { padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.price { font-weight: bold; font-size: 1.1rem; }
+.condition { font-size: 0.85rem; color: #9ca3af; }
+
+/* RESPONSIVE */
+@media (max-width: 1200px) { .fb-grid { grid-template-columns: repeat(3,1fr); } }
+@media (max-width: 900px) { .fb-layout { grid-template-columns: 1fr; } .fb-grid { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 600px) { .fb-grid { grid-template-columns: 1fr; } .nav-menu { flex-direction: column; align-items: flex-end; gap: 5px; }
+}
+</style>
+</head>
 <body>
 
-  <!-- Top Navigation -->
-  <header class="site-header">
-    <div class="container nav">
-      <a class="brand" href="#">
-        <img
-          src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Logo.png"
-          alt="CloudMart Logo"
-          class="logo"
-        />
-        <span>CloudMart</span>
-      </a>
+<header class="site-header">
+  <a class="brand" href="#">
+    <img src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Logo.png" class="logo" />
+    <span>CloudMart</span>
+  </a>
 
-      <nav class="nav-menu">
-        <a href="#wishlist">Wishlist</a>
-        <a href="#profile">Profile</a>
-      </nav>
+  <!-- RIGHT SIDE TOP HEADER BUTTONS -->
+  <div class="nav-menu">
+    <button class="btn btn-primary" onclick="goToCreatePage()">+ Sell Item</button>
+    <button class="btn btn-secondary" onclick="goToCartPage()">🛒 Cart (<span id="cartCount">0</span>)</button>
+    <button class="btn btn-outline" onclick="showNotifications()">🔔</button>
+    <span id="userDisplay"></span>
+  </div>
+</header>
+
+<main class="fb-layout">
+  <!-- SIDEBAR -->
+  <aside class="fb-sidebar">
+    <h2>Marketplace</h2>
+    <input type="text" placeholder="Search Marketplace" class="fb-search" id="searchInput" onkeyup="applyFilters()" />
+    <div class="fb-section">
+      <h4>Categories</h4>
+      <label><input type="checkbox" value="Electronics"> Electronics</label>
+      <label><input type="checkbox" value="Books"> Books</label>
+      <label><input type="checkbox" value="Furniture"> Furniture</label>
+      <label><input type="checkbox" value="Appliances"> Appliances</label>
     </div>
-  </header>
+    <button class="btn btn-primary full" onclick="goToCreatePage()">+ Create New Listing</button>
+    <button class="btn btn-outline full" onclick="applyFilters()">Apply Filters</button>
+  </aside>
 
-  <main class="marketplace-layout">
+  <!-- CONTENT -->
+  <section class="fb-content">
+    <div class="fb-topbar"><h2>Today's Picks</h2></div>
+    <div id="listings" class="fb-grid"></div>
+  </section>
+</main>
 
-    <!-- Sidebar Filters -->
-    <aside class="filters">
-      <h3>Marketplace</h3>
+<script>
+const API = "http://localhost:5001";
+let allListings = [];
 
-      <input
-        type="text"
-        placeholder="Search listings"
-        class="filter-input"
-      />
+// User display
+const user = JSON.parse(localStorage.getItem("user"));
+if (user) document.getElementById("userDisplay").innerText = "Hi, " + user.username;
 
-      <div class="filter-group">
-        <h4>Category</h4>
-        <label><input type="checkbox" /> Electronics</label>
-        <label><input type="checkbox" /> Books</label>
-        <label><input type="checkbox" /> Furniture</label>
-        <label><input type="checkbox" /> Appliances</label>
-      </div>
+// Cart
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+updateCartCount();
+function updateCartCount() { document.getElementById("cartCount").innerText = cart.length; }
 
-      <div class="filter-group">
-        <h4>Price</h4>
-        <label><input type="radio" name="price" /> Under $50</label>
-        <label><input type="radio" name="price" /> $50 – $100</label>
-        <label><input type="radio" name="price" /> $100+</label>
-      </div>
+// Navigation
+function goToCreatePage() { window.location.href = "create.html"; }
+function goToCartPage() { window.location.href = "cart.html"; }
+function showNotifications() { alert("No new notifications yet!"); }
 
-      <button class="btn btn-primary full">Apply Filters</button>
-    </aside>
+// Load listings
+async function loadListings() {
+  try {
+    const res = await fetch(API + "/api/listings");
+    const data = await res.json();
+    allListings = data;
+    renderListings(data);
+  } catch(err) { console.error("Error loading listings:", err); }
+}
 
-    <!-- Listings Feed -->
-    <section class="listings">
-      <h2>Today’s Picks</h2>
-
-      <div class="grid-3">
-
-        <!-- CSC 405 Textbook -->
-        <article class="feature-card product-card">
-          <img
-            src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Img.png"
-            class="product-img product-img-small"
-            alt="CSC 405 Textbook"
-          />
-          <h3>CSC 405 Textbook</h3>
-          <p class="muted">$45 • Like new</p>
-          <button class="btn btn-outline full">Add to Wishlist</button>
-        </article>
-
-        <!-- Mini Fridge -->
-        <article class="feature-card product-card">
-          <img
-            src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Calc"
-            class="product-img product-img-small"
-            alt="Mini Fridge"
-          />
-          <h3>Mini Fridge</h3>
-          <p class="muted">$80 • Good condition</p>
-          <button class="btn btn-outline full">Add to Wishlist</button>
-        </article>
-
-        <!-- Calculator -->
-        <article class="feature-card product-card">
-          <img
-            src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Fridge"
-            class="product-img product-img-small"
-            alt="Scientific Calculator"
-          />
-          <h3>Scientific Calculator</h3>
-          <p class="muted">$20 • Fully functional</p>
-          <button class="btn btn-outline full">Add to Wishlist</button>
-        </article>
-
-      </div>
-    </section>
-    <section id="wishlist" class="wishlist">
-        <h2>Your Wishlist</h2>
-        <p class="muted">Saved items stay here for later.</p>
-
-        <div id="wishlistEmpty" class="muted">
-          No saved items yet. Click “Add to Wishlist” on a listing.
+// Render listings
+function renderListings(data) {
+  const container = document.getElementById("listings");
+  container.innerHTML = "";
+  if(data.length === 0) { container.innerHTML = "<p>No listings found.</p>"; return; }
+  data.forEach(item => {
+    container.innerHTML += `
+      <article class="feature-card">
+        <img src="${item.image}" class="product-img">
+        <div class="card-body">
+          <p class="price">$${item.price}</p>
+          <h3>${item.title}</h3>
+          <p class="condition">${item.category} • ${item.condition}</p>
+          <button onclick="addToCart(${item.id})" class="btn btn-primary full">Add to Cart</button>
         </div>
+      </article>
+    `;
+  });
+}
 
-        <div id="wishlistGrid" class="grid-3"></div>
-      </section>
-  </main>
+// Add to cart
+function addToCart(id) {
+  const item = allListings.find(i => i.id === id);
+  cart.push(item);
+  localStorage.setItem("cart", JSON.stringify(cart));
+  updateCartCount();
+  alert("Added to cart!");
+}
 
-  <!-- Footer -->
-  <footer class="site-footer">
-    <div class="container footer-bottom">
-      <small class="muted">© 2026 CloudMart. All rights reserved.</small>
-    </div>
-  </footer>
+// Search & Filter
+function applyFilters() {
+  const searchQuery = document.getElementById("searchInput").value.toLowerCase();
+  const selectedCategories = Array.from(document.querySelectorAll("input[type=checkbox]:checked")).map(cb => cb.value);
+  let filtered = allListings;
+  if(searchQuery) filtered = filtered.filter(item => item.title.toLowerCase().includes(searchQuery));
+  if(selectedCategories.length > 0) filtered = filtered.filter(item => selectedCategories.includes(item.category));
+  renderListings(filtered);
+}
 
+// Initialize
+loadListings();
+</script>
 </body>
 </html>
