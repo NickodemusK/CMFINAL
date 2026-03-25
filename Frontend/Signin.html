@@ -189,20 +189,20 @@
 
 <body>
   <header class="nav">
-    <a href="index.html" class="brand">
-      <img src="../Resources/Images/Logo.png" class="nav-logo" alt="CloudMart Logo">
+    <a href="/" class="brand">
+      <img src="/Resources/Images/Logo.png" class="nav-logo" alt="CloudMart Logo">
       <span>CloudMart</span>
     </a>
 
     <nav class="nav-links">
-      <a class="nav-btn" href="Signin.html">Sign in</a>
+      <a class="nav-btn" href="/">Sign in</a>
     </nav>
   </header>
 
   <main class="page">
     <section class="card">
       <div class="card-header">
-        <img src="../Resources/Images/Logo.png" class="card-logo" alt="CloudMart Logo">
+        <img src="/Resources/Images/Logo.png" class="card-logo" alt="CloudMart Logo">
         <h1 id="modeTitle">Sign in</h1>
       </div>
 
@@ -336,7 +336,7 @@
           localStorage.setItem("currentUser", result.user.username);
           localStorage.setItem("userId", result.user.id);
 
-          window.location.href = "index.html";
+          window.location.href = "/home";
         }
       } catch (err) {
         setMsg(err.message || "Something went wrong.");

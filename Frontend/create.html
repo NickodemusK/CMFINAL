@@ -61,6 +61,10 @@
 
 <body>
   <div class="create-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <a href="/home" style="color: #007bff; text-decoration: none;">← Back to Home</a>
+      <a href="/" onclick="signOut()" style="color: #ff6b6b; text-decoration: none;">Sign Out</a>
+    </div>
     <h2>Create Listing</h2>
 
     <input id="title" placeholder="Title" />
@@ -84,6 +88,13 @@
   </div>
 
   <script>
+    function signOut() {
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("currentUser");
+      localStorage.removeItem("userId");
+      window.location.href = "/";
+    }
+
     async function uploadImageToS3(file) {
       console.log("Selected file:", file.name);
       console.log("Detected file type:", file.type);
@@ -121,12 +132,21 @@
       return imageUrl;
     }
 
+    // Debug: Log localStorage on page load
+    console.log("localStorage debug:", {
+      isLoggedIn: localStorage.getItem("isLoggedIn"),
+      userId: localStorage.getItem("userId"),
+      currentUser: localStorage.getItem("currentUser")
+    });
+
     async function submitListing() {
       const isLoggedIn = localStorage.getItem("isLoggedIn");
       const userId = localStorage.getItem("userId");
 
+      console.log("Submit check - isLoggedIn:", isLoggedIn, "userId:", userId);
+
       if (isLoggedIn !== "true" || !userId) {
-        alert("You must be logged in to create a listing!");
+        alert("You must be logged in to create a listing!\n\nDebug info:\nisLoggedIn = " + isLoggedIn + "\nuserId = " + userId);
         return;
       }
 
@@ -169,7 +189,7 @@
 
         if (res.ok) {
           alert("Listing created successfully!");
-          window.location.href = "index.html";
+          window.location.href = "/home";
         } else {
           const errText = await res.text();
           throw new Error("Failed to save listing: " + errText);

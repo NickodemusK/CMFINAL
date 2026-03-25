@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>My Wishlist | CloudMart</title>
+<style>
+/* RESET */
+* { box-sizing: border-box; margin:0; padding:0; }
+body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #fff; line-height:1.5; min-height: 100vh; }
+
+/* HEADER */
+.site-header {
+  background: #111827;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.brand { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 1.2rem; color: white; text-decoration: none; }
+.logo { height: 40px; }
+
+.nav-menu { display: flex; gap: 10px; align-items: center; }
+
+/* BUTTONS */
+.btn { padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition:0.2s; }
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: #2563eb; border: none; color: white; }
+.btn-secondary { background: #10b981; border: none; color: white; }
+.btn-outline { border: 1px solid white; background: transparent; color: white; }
+.btn-danger { background: #ef4444; border: none; color: white; }
+.full { width: 100%; }
+
+/* MAIN CONTENT */
+.main-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 20px;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.page-header h1 {
+  font-size: 2rem;
+}
+
+.heart-icon {
+  font-size: 2.5rem;
+}
+
+/* GRID */
+.wishlist-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+/* CARD */
+.wishlist-card {
+  background: #111827;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+.wishlist-card:hover { transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+.product-img { width: 100%; height: 180px; object-fit: cover; }
+.card-body { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.price { font-weight: bold; font-size: 1.1rem; color: #10b981; }
+.card-title { font-size: 1rem; }
+.condition { font-size: 0.85rem; color: #9ca3af; }
+.seller { font-size: 0.8rem; color: #6b7280; }
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.card-actions .btn {
+  flex: 1;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+}
+
+/* EMPTY STATE */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #9ca3af;
+}
+
+.empty-state h2 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  color: #fff;
+}
+
+.empty-state p {
+  margin-bottom: 20px;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1200px) { .wishlist-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 900px) { .wishlist-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { 
+  .wishlist-grid { grid-template-columns: 1fr; } 
+  .nav-menu { flex-direction: column; align-items: flex-end; gap: 5px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a class="brand" href="/home">
+    <img src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Logo.png" class="logo" />
+    <span>CloudMart</span>
+  </a>
+
+  <div class="nav-menu">
+    <a href="/home" class="btn btn-outline">← Back to Marketplace</a>
+    <a href="/create" class="btn btn-primary">+ Sell Item</a>
+    <span id="userDisplay"></span>
+    <button class="btn btn-outline" onclick="signOut()">Sign Out</button>
+  </div>
+</header>
+
+<main class="main-content">
+  <div class="page-header">
+    <span class="heart-icon">❤️</span>
+    <h1>My Wishlist</h1>
+  </div>
+
+  <div id="wishlistContainer" class="wishlist-grid"></div>
+  
+  <div id="emptyState" class="empty-state" style="display: none;">
+    <div class="empty-icon">💔</div>
+    <h2>Your wishlist is empty</h2>
+    <p>Items you save will appear here. Start exploring the marketplace!</p>
+    <a href="/home" class="btn btn-primary">Browse Marketplace</a>
+  </div>
+</main>
+
+<script>
+const API = "http://localhost:5001";
+
+// User display
+const currentUser = localStorage.getItem("currentUser");
+const userId = localStorage.getItem("userId");
+
+if (currentUser) {
+  document.getElementById("userDisplay").innerText = "Hi, " + currentUser;
+}
+
+// Check if logged in
+if (!userId) {
+  alert("Please sign in to view your wishlist!");
+  window.location.href = "/";
+}
+
+function signOut() {
+  localStorage.removeItem("isLoggedIn");
+  localStorage.removeItem("currentUser");
+  localStorage.removeItem("userId");
+  window.location.href = "/";
+}
+
+// Load wishlist
+async function loadWishlist() {
+  try {
+    const res = await fetch(API + "/api/wishlist?user_id=" + userId);
+    const data = await res.json();
+    renderWishlist(data);
+  } catch(err) {
+    console.error("Error loading wishlist:", err);
+  }
+}
+
+// Render wishlist
+function renderWishlist(data) {
+  const container = document.getElementById("wishlistContainer");
+  const emptyState = document.getElementById("emptyState");
+  
+  container.innerHTML = "";
+  
+  if (data.length === 0) {
+    container.style.display = "none";
+    emptyState.style.display = "block";
+    return;
+  }
+  
+  container.style.display = "grid";
+  emptyState.style.display = "none";
+  
+  data.forEach(item => {
+    container.innerHTML += `
+      <article class="wishlist-card">
+        <img src="${item.image}" class="product-img" alt="${item.title}">
+        <div class="card-body">
+          <p class="price">$${item.price}</p>
+          <h3 class="card-title">${item.title}</h3>
+          <p class="condition">${item.category} • ${item.condition}</p>
+          <p class="seller">Sold by: ${item.seller || 'Unknown'}</p>
+          <div class="card-actions">
+            <button onclick="addToCart(${item.id})" class="btn btn-primary">Add to Cart</button>
+            <button onclick="removeFromWishlist(${item.id})" class="btn btn-danger">Remove</button>
+          </div>
+        </div>
+      </article>
+    `;
+  });
+}
+
+// Remove from wishlist
+async function removeFromWishlist(listingId) {
+  try {
+    await fetch(API + "/api/wishlist/" + listingId + "?user_id=" + userId, { method: "DELETE" });
+    loadWishlist(); // Refresh the list
+  } catch(err) {
+    console.error("Error removing from wishlist:", err);
+  }
+}
+
+// Add to cart
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+async function addToCart(listingId) {
+  try {
+    const res = await fetch(API + "/api/wishlist?user_id=" + userId);
+    const data = await res.json();
+    const item = data.find(i => i.id === listingId);
+    
+    if (item) {
+      cart.push(item);
+      localStorage.setItem("cart", JSON.stringify(cart));
+      alert("Added to cart!");
+    }
+  } catch(err) {
+    console.error("Error adding to cart:", err);
+  }
+}
+
+// Initialize
+loadWishlist();
+</script>
+</body>
+</html>

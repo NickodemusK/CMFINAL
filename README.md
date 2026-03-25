@@ -13,7 +13,7 @@ A cloud-based campus marketplace for Hampton University students.
 
 ```bash
 git clone <your-repo-url>
-cd Cloud-Mart-main
+cd CMFINAL
 ```
 
 ### 2. Create a virtual environment
@@ -40,32 +40,53 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+If it does not work, install manually:
+```bash
+pip install flask flask-cors sshtunnel psycopg bcrypt python-dotenv boto3
+```
+
 ### 5. Run the application
 
 ```bash
 python app.py
-
-If it does not work do "pip install dotenv" and "pip install boto3"
 ```
 
-### 6. Copy signIn.HTML path and sign in
-
-- To run consisntently just run python app.py and run signIn.HTML
-
 The server will start at **http://localhost:5001**
+
+### 6. Access the Application
+
+Open your browser and go to: **http://localhost:5001**
+
+| Page | URL |
+|------|-----|
+| **Sign In / Register** | http://localhost:5001/ |
+| **Marketplace (Home)** | http://localhost:5001/home |
+| **Create Listing** | http://localhost:5001/create |
+| **My Wishlist** | http://localhost:5001/wishlist |
+
+## Features
+
+- **User Authentication** - Register with Hampton email (@my.hamptonu.edu) and sign in
+- **Browse Listings** - View all marketplace items with search and category filters
+- **Create Listings** - Sell items with image upload to AWS S3
+- **Wishlist** - Save items by clicking the heart ❤️ button
+- **Shopping Cart** - Add items to cart for checkout
 
 ## Project Structure
 
 ```
-Cloud-Mart-main/
-├── app.py                 # Flask backend server
+CMFINAL/
+├── app.py                 # Flask backend server & API routes
 ├── auth.py                # Authentication utilities
+├── s3_config.py           # AWS S3 configuration
 ├── requirements.txt       # Python dependencies
 ├── docker-compose.yml     # Local PostgreSQL (optional)
 ├── Frontend/
-│   ├── index.html         # Main page
+│   ├── index.html         # Marketplace/Home page
 │   ├── Signin.html        # Login/Register page
-│   ├── styles.css         # Styles
+│   ├── create.html        # Create listing page
+│   ├── wishlist.html      # User's saved items page
+│   ├── styles.css         # Shared styles
 │   └── script.js          # Frontend JavaScript
 ├── DataBase/
 │   ├── postgres.py        # Database connection module
@@ -76,13 +97,26 @@ Cloud-Mart-main/
     └── Images/            # Static images
 ```
 
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Register new user |
+| POST | `/api/auth/login` | User login |
+| GET | `/api/listings` | Get all listings |
+| POST | `/api/listings` | Create new listing |
+| GET | `/api/wishlist?user_id=X` | Get user's wishlist |
+| POST | `/api/wishlist` | Add to wishlist |
+| DELETE | `/api/wishlist/:id?user_id=X` | Remove from wishlist |
+| POST | `/api/uploads/presign` | Get S3 presigned URL |
+
 ## Configuration
 
 | Setting | Value |
 |---------|-------|
 | Backend Port | `5001` |
 | Database | AWS RDS PostgreSQL |
-| SSH Tunnel | EC2 instance at `16.59.45.159` |
+| Image Storage | AWS S3 |
 
 ## Quick Start Checklist
 
@@ -92,6 +126,7 @@ Cloud-Mart-main/
 - [ ] Virtual environment created and activated
 - [ ] Dependencies installed
 - [ ] Run with `python app.py`
+- [ ] Open http://localhost:5001 in browser
 
 ## Troubleshooting
 
@@ -111,3 +146,8 @@ chmod 600 Resources/ec2Test.pem
 - Ensure you have internet access
 - Verify the `ec2Test.pem` file is in the correct location
 - Check that the EC2 instance is running
+
+**Module not found errors:**
+```bash
+pip install flask flask-cors sshtunnel psycopg bcrypt python-dotenv boto3
+```
