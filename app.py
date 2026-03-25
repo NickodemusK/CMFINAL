@@ -31,7 +31,7 @@ tunnel = None
 
 def start_ssh_tunnel():
     global tunnel
-    if tunnel is None or not tunnel.is_active:
+    if tunnel is None or not getattr(tunnel, "is_active", False):
         tunnel = SSHTunnelForwarder(
             (SSH_HOST, 22),
             ssh_username=SSH_USER,
@@ -94,7 +94,9 @@ def init_db():
     conn.close()
 
 
+# ========================
 # AUTH
+# ========================
 @app.route("/api/auth/register", methods=["POST"])
 def register():
     data = request.get_json()
@@ -104,7 +106,7 @@ def register():
     cur = conn.cursor()
 
     cur.execute(
-        "INSERT INTO users (email, username, password_hash) VALUES (%s,%s,%s) RETURNING id",
+        "INSERT INTO users (email, username, password_hash) VALUES (%s, %s, %s) RETURNING id",
         (data["email"], data["username"], password_hash)
     )
 
@@ -123,7 +125,10 @@ def login():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT id, username, password_hash FROM users WHERE username=%s", (data["username"],))
+    cur.execute(
+        "SELECT id, username, password_hash FROM users WHERE username = %s",
+        (data["username"],)
+    )
     user = cur.fetchone()
 
     cur.close()
@@ -132,10 +137,12 @@ def login():
     if not user or not bcrypt.checkpw(data["password"].encode(), user[2].encode()):
         return jsonify({"error": "Invalid credentials"}), 401
 
-    return jsonify({"user": {"id": user[0], "username": user[1]}})
+    return jsonify({"user": {"id": user[0], "username": user[1]}}), 200
 
 
+# ========================
 # S3 PRESIGN ROUTE
+# ========================
 @app.route("/api/uploads/presign", methods=["POST"])
 def presign_upload():
     try:
@@ -156,7 +163,8 @@ def presign_upload():
             ClientMethod="put_object",
             Params={
                 "Bucket": BUCKET_NAME,
-                "Key": key
+                "Key": key,
+                "ContentType": file_type
             },
             ExpiresIn=300,
             HttpMethod="PUT"
@@ -175,7 +183,9 @@ def presign_upload():
         return jsonify({"error": "Failed to generate presigned URL"}), 500
 
 
-# CREATE LISTING
+# ========================
+# LISTINGS
+# ========================
 @app.route("/api/listings", methods=["POST"])
 def create_listing():
     data = request.get_json()
@@ -186,39 +196,52 @@ def create_listing():
 
     cur.execute("""
         INSERT INTO listings (user_id, title, price, category, condition, image)
-        VALUES (%s,%s,%s,%s,%s,%s)
+        VALUES (%s, %s, %s, %s, %s, %s)
         RETURNING id
-    """, (data["user_id"], data["title"], data["price"], data["category"], data["condition"], image))
+    """, (
+        data["user_id"],
+        data["title"],
+        data["price"],
+        data["category"],
+        data["condition"],
+        image
+    ))
 
+    new_listing_id = cur.fetchone()[0]
     conn.commit()
     cur.close()
     conn.close()
 
-    return jsonify({"message": "Listing created"}), 201
+    return jsonify({"message": "Listing created", "id": new_listing_id}), 201
 
 
-# GET LISTINGS
 @app.route("/api/listings", methods=["GET"])
 def get_listings():
     category = request.args.get("category")
+    search = request.args.get("search")
 
     conn = get_db_connection()
     cur = conn.cursor()
 
-    if category:
-        cur.execute("""
-            SELECT l.id, l.title, l.price, l.category, l.condition, l.image, u.username
-            FROM listings l
-            LEFT JOIN users u ON l.user_id = u.id
-            WHERE l.category = %s
-        """, (category,))
-    else:
-        cur.execute("""
-            SELECT l.id, l.title, l.price, l.category, l.condition, l.image, u.username
-            FROM listings l
-            LEFT JOIN users u ON l.user_id = u.id
-        """)
+    query = """
+        SELECT l.id, l.user_id, l.title, l.price, l.category, l.condition, l.image, u.username
+        FROM listings l
+        LEFT JOIN users u ON l.user_id = u.id
+        WHERE 1=1
+    """
+    params = []
 
+    if category:
+        query += " AND l.category = %s"
+        params.append(category)
+
+    if search:
+        query += " AND LOWER(l.title) LIKE %s"
+        params.append(f"%{search.lower()}%")
+
+    query += " ORDER BY l.id DESC"
+
+    cur.execute(query, params)
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -226,18 +249,145 @@ def get_listings():
     return jsonify([
         {
             "id": r[0],
-            "title": r[1],
-            "price": r[2],
-            "category": r[3],
-            "condition": r[4],
-            "image": r[5],
-            "seller": r[6]
+            "user_id": r[1],
+            "title": r[2],
+            "price": float(r[3]) if r[3] is not None else None,
+            "category": r[4],
+            "condition": r[5],
+            "image": r[6],
+            "seller": r[7]
         }
         for r in rows
-    ])
+    ]), 200
 
 
-# WISHLIST ENDPOINTS
+@app.route("/api/listings/<int:listing_id>", methods=["GET"])
+def get_single_listing(listing_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT l.id, l.user_id, l.title, l.price, l.category, l.condition, l.image, u.username
+        FROM listings l
+        LEFT JOIN users u ON l.user_id = u.id
+        WHERE l.id = %s
+    """, (listing_id,))
+
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if not row:
+        return jsonify({"error": "Listing not found"}), 404
+
+    return jsonify({
+        "id": row[0],
+        "user_id": row[1],
+        "title": row[2],
+        "price": float(row[3]) if row[3] is not None else None,
+        "category": row[4],
+        "condition": row[5],
+        "image": row[6],
+        "seller": row[7]
+    }), 200
+
+
+@app.route("/api/listings/<int:listing_id>", methods=["PUT"])
+def update_listing(listing_id):
+    data = request.get_json()
+    user_id = data.get("user_id")
+    title = data.get("title")
+    price = data.get("price")
+    category = data.get("category")
+    condition = data.get("condition")
+    image = data.get("image")
+
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid user_id"}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT user_id FROM listings WHERE id = %s", (listing_id,))
+    row = cur.fetchone()
+
+    if not row:
+        cur.close()
+        conn.close()
+        return jsonify({"error": "Listing not found"}), 404
+
+    if int(row[0]) != user_id:
+        cur.close()
+        conn.close()
+        return jsonify({"error": "Forbidden"}), 403
+
+    cur.execute("""
+        UPDATE listings
+        SET title = %s, price = %s, category = %s, condition = %s, image = %s
+        WHERE id = %s
+        RETURNING id, user_id, title, price, category, condition, image
+    """, (title, price, category, condition, image, listing_id))
+
+    updated = cur.fetchone()
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        "listing": {
+            "id": updated[0],
+            "user_id": updated[1],
+            "title": updated[2],
+            "price": float(updated[3]) if updated[3] is not None else None,
+            "category": updated[4],
+            "condition": updated[5],
+            "image": updated[6]
+        }
+    }), 200
+
+
+@app.route("/api/listings/<int:listing_id>", methods=["DELETE"])
+def delete_listing(listing_id):
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("user_id") or request.args.get("user_id")
+
+    if user_id is None:
+        return jsonify({"error": "user_id is required"}), 400
+
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid user_id"}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT user_id FROM listings WHERE id = %s", (listing_id,))
+    row = cur.fetchone()
+
+    if not row:
+        cur.close()
+        conn.close()
+        return jsonify({"error": "Listing not found"}), 404
+
+    if int(row[0]) != user_id:
+        cur.close()
+        conn.close()
+        return jsonify({"error": "Forbidden"}), 403
+
+    cur.execute("DELETE FROM listings WHERE id = %s", (listing_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return jsonify({"success": True}), 200
+
+
+# ========================
+# WISHLIST
+# ========================
 @app.route("/api/wishlist", methods=["GET"])
 def get_wishlist():
     user_id = request.args.get("user_id")
@@ -248,7 +398,7 @@ def get_wishlist():
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT l.id, l.title, l.price, l.category, l.condition, l.image, u.username
+        SELECT l.id, l.user_id, l.title, l.price, l.category, l.condition, l.image, u.username
         FROM wishlist w
         JOIN listings l ON w.listing_id = l.id
         LEFT JOIN users u ON l.user_id = u.id
@@ -263,15 +413,16 @@ def get_wishlist():
     return jsonify([
         {
             "id": r[0],
-            "title": r[1],
-            "price": r[2],
-            "category": r[3],
-            "condition": r[4],
-            "image": r[5],
-            "seller": r[6]
+            "user_id": r[1],
+            "title": r[2],
+            "price": float(r[3]) if r[3] is not None else None,
+            "category": r[4],
+            "condition": r[5],
+            "image": r[6],
+            "seller": r[7]
         }
         for r in rows
-    ])
+    ]), 200
 
 
 @app.route("/api/wishlist", methods=["POST"])
@@ -294,10 +445,12 @@ def add_to_wishlist():
         conn.commit()
     except Exception as e:
         conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
         cur.close()
         conn.close()
+        return jsonify({"error": str(e)}), 500
+
+    cur.close()
+    conn.close()
 
     return jsonify({"message": "Added to wishlist"}), 201
 
@@ -323,26 +476,33 @@ def remove_from_wishlist(listing_id):
     return jsonify({"message": "Removed from wishlist"}), 200
 
 
+# ========================
 # SERVE FRONTEND FILES
+# ========================
 @app.route("/")
 def serve_signin():
     return send_from_directory("Frontend", "Signin.html")
+
 
 @app.route("/home")
 def serve_index():
     return send_from_directory("Frontend", "index.html")
 
+
 @app.route("/create")
 def serve_create():
     return send_from_directory("Frontend", "create.html")
+
 
 @app.route("/wishlist")
 def serve_wishlist():
     return send_from_directory("Frontend", "wishlist.html")
 
+
 @app.route("/Frontend/<path:filename>")
 def serve_frontend_files(filename):
     return send_from_directory("Frontend", filename)
+
 
 @app.route("/Resources/<path:filename>")
 def serve_resources(filename):
