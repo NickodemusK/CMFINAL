@@ -1,7 +1,7 @@
 -- CloudMart Database Schema
 -- Users table for authentication
 
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     username VARCHAR(50) UNIQUE NOT NULL,
@@ -10,5 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- Index for faster lookups
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+DROP INDEX IF EXISTS idx_users_email ON users;
+CREATE INDEX idx_users_email ON users(email);
+DROP INDEX IF EXISTS idx_users_username ON users;
+CREATE INDEX idx_users_username ON users(username);
