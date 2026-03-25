@@ -3,4 +3,7 @@
 __pycache__/
 venv/
 .env
+<<<<<<< HEAD
 .env
+=======
+>>>>>>> f7f504b (Remove .env from tracking)
