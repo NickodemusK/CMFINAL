@@ -14,7 +14,7 @@ A cloud-based campus marketplace for Hampton University students.
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repo-url>
+git clone <https://github.com/NickodemusK/CMFINAL.git>
 cd CMFINAL
 ```
 
