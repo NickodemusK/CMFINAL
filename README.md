@@ -1,3 +1,5 @@
+#README.md created by Howard Ames III
+
 # Cloud-Mart
 
 A cloud-based campus marketplace for Hampton University students.
