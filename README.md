@@ -57,14 +57,14 @@ The server will start at **http://localhost:5001**
 
 ### 6. Access the Application
 
-Open your browser and go to: **http://localhost:5001**
+Open your browser and copy the file path of where your Signin.html is and paste it into the broswer*
 
 | Page | URL |
 |------|-----|
-| **Sign In / Register** | http://localhost:5001/ |
-| **Marketplace (Home)** | http://localhost:5001/home |
-| **Create Listing** | http://localhost:5001/create |
-| **My Wishlist** | http://localhost:5001/wishlist |
+| **Sign In / Register** | Frontend/Signin.html |
+| **Marketplace (Home)** | Frontend/index.html |
+| **Create Listing** | Frontend/create.html |
+| **My Wishlist** | Frontend/wishlist.html |
 
 ## Features
 
