@@ -74,6 +74,16 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
 .price { font-weight: bold; font-size: 1.1rem; }
 .condition { font-size: 0.85rem; color: #9ca3af; }
 
+/* Styles for the seller link */
+.seller-link {
+  color: #60a5fa;
+  text-decoration: none;
+  font-weight: 500;
+}
+.seller-link:hover {
+  text-decoration: underline;
+}
+
 .card-header-row { display: flex; justify-content: space-between; align-items: center; }
 .heart-btn {
   background: none;
@@ -97,7 +107,7 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
 <body>
 
 <header class="site-header">
-  <a class="brand" href="#">
+  <a class="brand" href="index.html">
     <img src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Logo.png" class="logo" />
     <span>CloudMart</span>
   </a>
@@ -212,6 +222,9 @@ function renderListings(data) {
     const isOwner = user && Number(item.user_id) === Number(user.id);
     const isSaved = wishlistItems.some(w => Number(w.id) === Number(item.id));
 
+    // NEW: We encode the seller name to safely pass it into the URL
+    const sellerName = item.seller || "Unknown";
+
     container.innerHTML += `
       <article class="feature-card">
         <img src="${item.image || 'https://picsum.photos/300'}" class="product-img">
@@ -232,7 +245,12 @@ function renderListings(data) {
           </div>
           <h3>${item.title}</h3>
           <p class="condition">${item.category || ""} • ${item.condition || ""}</p>
-          <p>Seller: ${item.seller || "Unknown"}</p>
+          
+          <p>Seller: 
+            <a href="profile.html?user=${encodeURIComponent(sellerName)}" class="seller-link">
+              ${sellerName}
+            </a>
+          </p>
 
           <button onclick="addToCart(${item.id})" class="btn btn-primary full">Add to Cart</button>
 
