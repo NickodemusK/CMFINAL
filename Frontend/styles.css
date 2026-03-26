@@ -60,6 +60,20 @@ body {
   color: white;
 }
 
+.seller-btn {
+  background: transparent;
+  border: none;
+  color: #60a5fa;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.seller-btn:hover {
+  color: #93c5fd;
+}
+
 .full {
   width: 100%;
 }
