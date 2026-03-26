@@ -8,10 +8,10 @@ import os
 import uuid
 from dotenv import load_dotenv
 
-# Load environment variables from .env
+# Load environment variables from .env - Nickodemus
 load_dotenv()
 
-# S3 config
+# S3 config - Nickodemus
 from s3_config import s3, BUCKET_NAME, AWS_REGION
 
 app = Flask(__name__)
