@@ -232,7 +232,14 @@ function renderListings(data) {
           </div>
           <h3>${item.title}</h3>
           <p class="condition">${item.category || ""} • ${item.condition || ""}</p>
-          <p>Seller: ${item.seller || "Unknown"}</p>
+          <p>
+          Seller:
+            <button
+              class="seller-btn"
+                onclick="filterBySeller('${(item.seller || "Unknown").replace(/'/g, "\\'")}')">
+                  ${item.seller || "Unknown"}
+              </button>
+          </p>
 
           <button onclick="addToCart(${item.id})" class="btn btn-primary full">Add to Cart</button>
 
