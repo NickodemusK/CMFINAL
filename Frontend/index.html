@@ -288,6 +288,11 @@ function applyFilters() {
   renderListings(filtered);
 }
 
+function filterBySeller(sellerName) {
+  const filtered = allListings.filter(item => (item.seller || "Unknown") === sellerName);
+  renderListings(filtered);
+}
+
 function editListing(listingId) {
   window.location.href = `create.html?edit=${listingId}`;
 }
