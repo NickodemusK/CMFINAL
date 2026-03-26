@@ -135,7 +135,8 @@
     async function uploadImageToS3(file) {
       console.log("Selected file:", file.name);
       console.log("Detected file type:", file.type);
-        <!-- Nickodemus wrote s3 related code for images -->
+
+      // Nickodemus wrote the S3 image upload code
       const presignRes = await fetch(`${API}/api/uploads/presign`, {
         method: "POST",
         headers: {
@@ -215,6 +216,7 @@
           imageUrl = await uploadImageToS3(imageFile);
         }
 
+        // TJ created the listing submission logic for sending user input to the backend
         const listing = {
           user_id: Number(user.id),
           title: title,
