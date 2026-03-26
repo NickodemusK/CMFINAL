@@ -21,19 +21,40 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
   z-index: 1000;
 }
 
-.brand { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 1.2rem; color: white; }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: white;
+  text-decoration: none;
+}
+
 .logo { height: 40px; }
 
-.nav-menu { display: flex; gap: 10px; align-items: center; }
+.nav-menu {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
 
-.btn { padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition:0.2s; }
+.btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.2s;
+}
 .btn:hover { opacity: 0.85; }
+
 .btn-primary { background: #2563eb; border: none; color: white; }
 .btn-secondary { background: #10b981; border: none; color: white; }
 .btn-outline { border: 1px solid white; background: transparent; color: white; }
 .full { width: 100%; }
 
-.fb-layout { display: grid; grid-template-columns: 260px 1fr; height: calc(100vh - 70px); }
+.fb-layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 70px); }
 
 .fb-sidebar {
   padding: 20px;
@@ -43,6 +64,7 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
   flex-direction: column;
   gap: 15px;
 }
+
 .fb-search {
   width: 100%;
   padding: 10px 15px;
@@ -52,6 +74,7 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
   color: white;
   outline: none;
 }
+
 .fb-section h4 { margin-bottom: 10px; font-weight: bold; }
 .fb-section label { display: block; margin-bottom: 8px; cursor: pointer; font-size: 0.95rem; }
 
@@ -68,13 +91,36 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
   display: flex;
   flex-direction: column;
 }
-.feature-card:hover { transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
-.product-img { width: 100%; height: 180px; object-fit: cover; }
-.card-body { padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+
+.feature-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.product-img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  background: #1f2937;
+}
+
+.card-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .price { font-weight: bold; font-size: 1.1rem; }
 .condition { font-size: 0.85rem; color: #9ca3af; }
 
-.card-header-row { display: flex; justify-content: space-between; align-items: center; }
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
 .heart-btn {
   background: none;
   border: none;
@@ -86,8 +132,33 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
 .heart-btn:hover { transform: scale(1.2); }
 .heart-btn.saved { color: #ef4444; }
 
-@media (max-width: 1200px) { .fb-grid { grid-template-columns: repeat(3,1fr); } }
-@media (max-width: 900px) { .fb-layout { grid-template-columns: 1fr; } .fb-grid { grid-template-columns: repeat(2,1fr); } }
+.seller-btn {
+  background: transparent;
+  color: #93c5fd;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  text-decoration: underline;
+}
+.seller-btn:hover {
+  color: #bfdbfe;
+}
+
+.muted {
+  color: #9ca3af;
+  font-size: 0.92rem;
+}
+
+@media (max-width: 1200px) {
+  .fb-grid { grid-template-columns: repeat(3,1fr); }
+}
+
+@media (max-width: 900px) {
+  .fb-layout { grid-template-columns: 1fr; }
+  .fb-grid { grid-template-columns: repeat(2,1fr); }
+}
+
 @media (max-width: 600px) {
   .fb-grid { grid-template-columns: 1fr; }
   .nav-menu { flex-direction: column; align-items: flex-end; gap: 5px; }
@@ -97,8 +168,8 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
 <body>
 
 <header class="site-header">
-  <a class="brand" href="#">
-    <img src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Logo.png" class="logo" />
+  <a class="brand" href="index.html">
+    <img src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Logo.png" class="logo" alt="CloudMart Logo" />
     <span>CloudMart</span>
   </a>
 
@@ -130,8 +201,10 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
       <label><input type="checkbox" value="Furniture"> Furniture</label>
       <label><input type="checkbox" value="Appliances"> Appliances</label>
     </div>
+
     <button class="btn btn-primary full" onclick="goToCreatePage()">+ Create New Listing</button>
     <button class="btn btn-outline full" onclick="applyFilters()">Apply Filters</button>
+    <button class="btn btn-outline full" onclick="clearFilters()">Clear Filters</button>
   </aside>
 
   <section class="fb-content">
@@ -145,19 +218,33 @@ const API = "http://localhost:5001";
 
 let allListings = [];
 let wishlistItems = [];
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-const user = JSON.parse(localStorage.getItem("user") || "null");
+// Support either "user" object or older localStorage keys
+const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+const currentUserName = localStorage.getItem("currentUser");
+const currentUserId = localStorage.getItem("userId");
+
+const user = storedUser || (
+  currentUserName
+    ? {
+        id: currentUserId ? Number(currentUserId) : null,
+        username: currentUserName
+      }
+    : null
+);
 
 if (user) {
   const el = document.getElementById("userDisplay");
-  if (el) el.innerText = "Hi, " + user.username;
+  if (el) el.innerText = "Hi, " + (user.username || "User");
 }
 
-let cart = JSON.parse(localStorage.getItem("cart")) || [];
 updateCartCount();
 
 function updateCartCount() {
-  document.getElementById("cartCount").innerText = cart.length;
+  cart = JSON.parse(localStorage.getItem("cart")) || [];
+  const cartEl = document.getElementById("cartCount");
+  if (cartEl) cartEl.innerText = cart.length;
 }
 
 function goToCreatePage() { window.location.href = "create.html"; }
@@ -165,19 +252,29 @@ function goToCartPage() { window.location.href = "cart.html"; }
 function goToWishlist() { window.location.href = "wishlist.html"; }
 function showNotifications() { alert("No new notifications yet!"); }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 async function loadListings() {
   try {
     const res = await fetch(`${API}/api/listings`);
     const data = await res.json();
-    allListings = data;
-    renderListings(data);
+    allListings = Array.isArray(data) ? data : [];
+    renderListings(allListings);
   } catch (err) {
     console.error("Error loading listings:", err);
+    document.getElementById("listings").innerHTML = "<p class='muted'>Unable to load listings right now.</p>";
   }
 }
 
 async function loadWishlist() {
-  if (!user) {
+  if (!user || user.id == null) {
     wishlistItems = [];
     return;
   }
@@ -204,25 +301,32 @@ function renderListings(data) {
   container.innerHTML = "";
 
   if (!data || data.length === 0) {
-    container.innerHTML = "<p>No listings found.</p>";
+    container.innerHTML = "<p class='muted'>No listings found.</p>";
     return;
   }
 
   data.forEach(item => {
-    const isOwner = user && Number(item.user_id) === Number(user.id);
+    const isOwner = user && user.id != null && Number(item.user_id) === Number(user.id);
     const isSaved = wishlistItems.some(w => Number(w.id) === Number(item.id));
+
+    const safeTitle = escapeHtml(item.title || "Untitled Item");
+    const safeCategory = escapeHtml(item.category || "Uncategorized");
+    const safeCondition = escapeHtml(item.condition || "Condition not listed");
+    const safeSeller = escapeHtml(item.seller || "Unknown");
+    const safeImage = escapeHtml(item.image || "https://picsum.photos/300");
+    const displayPrice = Number(item.price) || 0;
 
     container.innerHTML += `
       <article class="feature-card">
-        <img src="${item.image || 'https://picsum.photos/300'}" class="product-img">
+        <img src="${safeImage}" class="product-img" alt="${safeTitle}">
         <div class="card-body">
           <div class="card-header-row">
-            <p class="price">$${item.price ?? ""}</p>
+            <p class="price">$${displayPrice.toFixed(2)}</p>
             ${
-              user ? `
+              user && user.id != null ? `
                 <button
                   class="heart-btn ${isSaved ? 'saved' : ''}"
-                  onclick="toggleWishlist(${item.id}, ${isSaved})"
+                  onclick="toggleWishlist(${Number(item.id)}, ${isSaved})"
                   title="${isSaved ? 'Remove from wishlist' : 'Add to wishlist'}"
                 >
                   ${isSaved ? '❤️' : '🤍'}
@@ -230,23 +334,25 @@ function renderListings(data) {
               ` : ""
             }
           </div>
-          <h3>${item.title}</h3>
-          <p class="condition">${item.category || ""} • ${item.condition || ""}</p>
+
+          <h3>${safeTitle}</h3>
+          <p class="condition">${safeCategory} • ${safeCondition}</p>
           <p>
-          Seller:
+            Seller:
             <button
               class="seller-btn"
-                onclick="filterBySeller('${(item.seller || "Unknown").replace(/'/g, "\\'")}')">
-                  ${item.seller || "Unknown"}
-              </button>
+              onclick="filterBySeller('${safeSeller.replace(/'/g, "\\'")}')"
+            >
+              ${safeSeller}
+            </button>
           </p>
 
-          <button onclick="addToCart(${item.id})" class="btn btn-primary full">Add to Cart</button>
+          <button onclick="addToCart(${Number(item.id)})" class="btn btn-primary full">Add to Cart</button>
 
           ${
             isOwner ? `
-              <button onclick="editListing(${item.id})" class="btn btn-outline full">Edit</button>
-              <button onclick="deleteListing(${item.id})" class="btn btn-secondary full">Delete</button>
+              <button onclick="editListing(${Number(item.id)})" class="btn btn-outline full">Edit</button>
+              <button onclick="deleteListing(${Number(item.id)})" class="btn btn-secondary full">Delete</button>
             ` : ""
           }
         </div>
@@ -256,10 +362,22 @@ function renderListings(data) {
 }
 
 function addToCart(id) {
-  const item = allListings.find(i => i.id === id);
+  const item = allListings.find(i => Number(i.id) === Number(id));
   if (!item) return;
 
-  cart.push(item);
+  const cartItem = {
+    id: item.id,
+    title: item.title || "Untitled Item",
+    image: item.image || "https://picsum.photos/300",
+    price: Number(item.price) || 0,
+    category: item.category || "Uncategorized",
+    condition: item.condition || "Condition not listed",
+    seller: item.seller || "Unknown",
+    user_id: item.user_id ?? null
+  };
+
+  cart = JSON.parse(localStorage.getItem("cart")) || [];
+  cart.push(cartItem);
   localStorage.setItem("cart", JSON.stringify(cart));
   updateCartCount();
   alert("Added to cart!");
@@ -275,7 +393,9 @@ function applyFilters() {
 
   if (searchQuery) {
     filtered = filtered.filter(item =>
-      (item.title || "").toLowerCase().includes(searchQuery)
+      (item.title || "").toLowerCase().includes(searchQuery) ||
+      (item.category || "").toLowerCase().includes(searchQuery) ||
+      (item.seller || "").toLowerCase().includes(searchQuery)
     );
   }
 
@@ -288,6 +408,12 @@ function applyFilters() {
   renderListings(filtered);
 }
 
+function clearFilters() {
+  document.getElementById("searchInput").value = "";
+  document.querySelectorAll("input[type=checkbox]").forEach(cb => cb.checked = false);
+  renderListings(allListings);
+}
+
 function filterBySeller(sellerName) {
   const filtered = allListings.filter(item => (item.seller || "Unknown") === sellerName);
   renderListings(filtered);
@@ -298,7 +424,7 @@ function editListing(listingId) {
 }
 
 async function deleteListing(listingId) {
-  if (!user) {
+  if (!user || user.id == null) {
     alert("You must be logged in.");
     return;
   }
@@ -332,7 +458,7 @@ async function deleteListing(listingId) {
 }
 
 async function toggleWishlist(listingId, isSaved) {
-  if (!user) {
+  if (!user || user.id == null) {
     alert("You must be logged in.");
     return;
   }
@@ -375,7 +501,11 @@ async function toggleWishlist(listingId, isSaved) {
   }
 }
 
+window.addEventListener("focus", updateCartCount);
+window.addEventListener("storage", updateCartCount);
+
 async function init() {
+  updateCartCount();
   await loadWishlist();
   await loadListings();
 }
