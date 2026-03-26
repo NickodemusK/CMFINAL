@@ -56,16 +56,37 @@
     .btn-primary:hover {
       background: #0056b3;
     }
+
+    .top-links {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .top-links a {
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .back-link {
+      color: #007bff;
+    }
+
+    .signout-link {
+      color: #ff6b6b;
+    }
   </style>
 </head>
 
 <body>
   <div class="create-container">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <a href="./index.html" style="color: #007bff; text-decoration: none;">← Back to Home</a>
-      <a href="/" onclick="signOut()" style="color: #ff6b6b; text-decoration: none;">Sign Out</a>
+    <div class="top-links">
+      <a href="./index.html" class="back-link">← Back to Home</a>
+      <a href="#" class="signout-link" onclick="signOut()">Sign Out</a>
     </div>
-    <h2>Create Listing</h2>
+
+    <h2 id="pageTitle">Create Listing</h2>
 
     <input id="title" placeholder="Title" />
     <input id="price" placeholder="Price" type="number" step="0.01" />
@@ -84,22 +105,38 @@
 
     <input id="image" type="file" accept="image/*" />
 
-    <button class="btn-primary" onclick="submitListing()">Create</button>
+    <button class="btn-primary" id="submitBtn" onclick="submitListing()">Create</button>
   </div>
 
   <script>
+    const API = "http://localhost:5001";
+
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get("edit");
+    const isEditMode = !!editId;
+
+    const pageTitle = document.getElementById("pageTitle");
+    const submitBtn = document.getElementById("submitBtn");
+
+    if (isEditMode) {
+      pageTitle.innerText = "Edit Listing";
+      submitBtn.innerText = "Update";
+      loadListingForEdit();
+    }
+
     function signOut() {
+      localStorage.removeItem("user");
       localStorage.removeItem("isLoggedIn");
       localStorage.removeItem("currentUser");
       localStorage.removeItem("userId");
-      window.location.href = "/";
+      window.location.href = "signin.html";
     }
 
     async function uploadImageToS3(file) {
       console.log("Selected file:", file.name);
       console.log("Detected file type:", file.type);
 
-      const presignRes = await fetch("http://localhost:5001/api/uploads/presign", {
+      const presignRes = await fetch(`${API}/api/uploads/presign`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -116,7 +153,6 @@
       }
 
       const { uploadUrl, imageUrl, key } = await presignRes.json();
-
       console.log("Presign response:", { uploadUrl, imageUrl, key });
 
       const uploadRes = await fetch(uploadUrl, {
@@ -132,21 +168,32 @@
       return imageUrl;
     }
 
-    // Debug: Log localStorage on page load
-    console.log("localStorage debug:", {
-      isLoggedIn: localStorage.getItem("isLoggedIn"),
-      userId: localStorage.getItem("userId"),
-      currentUser: localStorage.getItem("currentUser")
-    });
+    async function loadListingForEdit() {
+      try {
+        const res = await fetch(`${API}/api/listings/${editId}`);
+        const listing = await res.json();
+
+        if (!res.ok) {
+          throw new Error(listing.error || "Failed to load listing");
+        }
+
+        document.getElementById("title").value = listing.title || "";
+        document.getElementById("price").value = listing.price ?? "";
+        document.getElementById("category").value = listing.category || "Electronics";
+        document.getElementById("condition").value = listing.condition || "Used";
+
+        window.currentImage = listing.image || "https://picsum.photos/300";
+      } catch (err) {
+        console.error("Error loading listing:", err);
+        alert("Error loading listing: " + err.message);
+      }
+    }
 
     async function submitListing() {
-      const isLoggedIn = localStorage.getItem("isLoggedIn");
-      const userId = localStorage.getItem("userId");
+      const user = JSON.parse(localStorage.getItem("user") || "null");
 
-      console.log("Submit check - isLoggedIn:", isLoggedIn, "userId:", userId);
-
-      if (isLoggedIn !== "true" || !userId) {
-        alert("You must be logged in to create a listing!\n\nDebug info:\nisLoggedIn = " + isLoggedIn + "\nuserId = " + userId);
+      if (!user || !user.id) {
+        alert("You must be logged in to continue.");
         return;
       }
 
@@ -161,7 +208,7 @@
         return;
       }
 
-      let imageUrl = "https://picsum.photos/300";
+      let imageUrl = window.currentImage || "https://picsum.photos/300";
 
       try {
         if (imageFile) {
@@ -169,7 +216,7 @@
         }
 
         const listing = {
-          user_id: parseInt(userId),
+          user_id: Number(user.id),
           title: title,
           price: price,
           category: category,
@@ -179,24 +226,36 @@
 
         console.log("Listing payload:", listing);
 
-        const res = await fetch("http://localhost:5001/api/listings", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(listing)
-        });
+        let res;
+
+        if (isEditMode) {
+          res = await fetch(`${API}/api/listings/${editId}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(listing)
+          });
+        } else {
+          res = await fetch(`${API}/api/listings`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(listing)
+          });
+        }
 
         if (res.ok) {
-          alert("Listing created successfully!");
-          window.location.href = "./index.html";
+          alert(isEditMode ? "Listing updated successfully!" : "Listing created successfully!");
+          window.location.href = "index.html";
         } else {
           const errText = await res.text();
-          throw new Error("Failed to save listing: " + errText);
+          throw new Error((isEditMode ? "Failed to update listing: " : "Failed to save listing: ") + errText);
         }
       } catch (err) {
-        console.error("Error creating listing:", err);
-        alert("Error creating listing: " + err.message);
+        console.error(isEditMode ? "Error updating listing:" : "Error creating listing:", err);
+        alert((isEditMode ? "Error updating listing: " : "Error creating listing: ") + err.message);
       }
     }
   </script>

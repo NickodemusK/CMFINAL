@@ -332,10 +332,13 @@
         } else {
           const result = await postJSON("/api/auth/login", { username, password });
           
+          // CHANGED: store the whole user object under the key "user"
+          localStorage.setItem("user", JSON.stringify(result.user));
+
+          // CHANGED: optional extra flags for easier access to common properties
           localStorage.setItem("isLoggedIn", "true");
           localStorage.setItem("currentUser", result.user.username);
-          localStorage.setItem("userId", result.user.id);
-
+          localStorage.setItem("userId", String(result.user.id));
           window.location.href = "./index.html";
         }
       } catch (err) {
