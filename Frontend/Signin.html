@@ -4,248 +4,147 @@
   <meta charset="UTF-8">
   <title>CloudMart | Sign in</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <style>
-    <!--Nickodemus wrote this file-->
-    body {
+    /* Strictly Dark Mode - No white backgrounds */
+    html, body {
+      background-color: #0b1020;
       margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+    body {
       font-family: Arial, sans-serif;
-      color: #e8eefc;
-      background:
-        radial-gradient(1200px 600px at 20% 10%, #1a3a7a 0%, rgba(26, 58, 122, 0) 60%),
-        radial-gradient(900px 500px at 80% 30%, #0b5aa8 0%, rgba(11, 90, 168, 0) 55%),
-        linear-gradient(180deg, #060b1a 0%, #050814 100%);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
       min-height: 100vh;
     }
-
     .nav {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 16px 28px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(0, 0, 0, 0.15);
-      backdrop-filter: blur(10px);
+      background: #111;
+      border-bottom: 1px solid #1e2438;
     }
-
     .brand {
       display: flex;
       align-items: center;
       gap: 10px;
       text-decoration: none;
-      color: inherit;
+      color: #fff;
       font-weight: 700;
     }
-
-    .nav-logo {
-      max-height: 36px;
-      width: auto;
-      object-fit: contain;
-      display: block;
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      font-size: 14px;
-    }
-
-    .nav-links a {
-      color: rgba(232, 238, 252, 0.85);
-      text-decoration: none;
-    }
-
-    .nav-links a:hover {
-      color: #ffffff;
-    }
-
-    .nav-btn {
-      padding: 10px 14px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      background: rgba(255, 255, 255, 0.05);
-      color: #e8eefc;
-      font-weight: 600;
-    }
-
-    .nav-btn:hover {
-      background: rgba(255, 255, 255, 0.10);
-    }
-
+    .nav-logo { max-height: 36px; }
     .page {
-      display: grid;
-      place-items: center;
-      padding: 60px 16px;
-    }
-
-    .card {
-      width: 100%;
-      max-width: 420px;
-      padding: 22px;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-      backdrop-filter: blur(10px);
-    }
-
-    .card-header {
+      flex: 1;
       display: flex;
+      justify-content: center;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
+      padding: 20px;
     }
-
-    .card-logo {
-      width: 40px;
-      height: auto;
+    .card {
+      background: #111;
+      padding: 30px;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 350px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+      border: 1px solid #1e2438;
     }
-
-    h1 {
-      font-size: 22px;
-      margin: 0;
-    }
-
-    .sub {
-      margin: 10px 0 18px;
-      font-size: 14px;
-      color: rgba(232, 238, 252, 0.8);
-    }
-
-    label {
-      display: block;
-      font-size: 13px;
-      margin: 12px 0 6px;
-    }
-
+    h1 { text-align: center; margin-bottom: 20px; font-size: 24px; }
+    .sub { font-size: 14px; color: #8892b0; text-align: center; margin-bottom: 25px; }
+    label { display: block; font-size: 13px; margin-bottom: 8px; color: #ccd6f6; }
     input {
       width: 100%;
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      background: rgba(0, 0, 0, 0.25);
-      color: #e8eefc;
-      outline: none;
-      box-sizing: border-box;
-    }
-
-    input:focus {
-      border-color: rgba(64, 150, 255, 0.65);
-    }
-
-    .row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      margin-top: 10px;
-      color: rgba(232, 238, 252, 0.75);
-    }
-
-    .row a {
-      color: rgba(232, 238, 252, 0.85);
-      text-decoration: none;
-    }
-
-    .row a:hover {
+      padding: 10px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      border: 1px solid #233554;
+      background: #1e2438;
       color: #fff;
+      box-sizing: border-box;
+      outline: none;
     }
-
     .btn {
       width: 100%;
-      margin-top: 12px;
       padding: 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      background: linear-gradient(180deg, #0b5aa8 0%, #0a2d63 100%);
+      background: #007bff;
+      border: none;
       color: #fff;
-      font-weight: 700;
+      border-radius: 5px;
       cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      transition: background 0.3s;
     }
-
-    .btn:hover {
-      filter: brightness(1.05);
-    }
-
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .msg {
-      margin-top: 12px;
+    .btn:hover { background: #0056b3; }
+    .row {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
       font-size: 13px;
-      min-height: 18px;
+      margin-top: 15px;
+      text-align: center;
     }
-
-    .msg.success {
-      color: #4ade80;
+    .row a { color: #007bff; text-decoration: none; }
+    .admin-link {
+      display: block;
+      margin-top: 20px;
+      font-size: 11px;
+      color: #8892b0;
+      text-decoration: none;
+      border-top: 1px solid #1e2438;
+      padding-top: 15px;
     }
-
-    .msg.error {
-      color: #f87171;
-    }
+    .msg { margin-top: 15px; font-size: 13px; text-align: center; min-height: 20px; }
+    .msg.error { color: #ff6b6b; }
+    .msg.success { color: #4ade80; }
   </style>
 </head>
-
 <body>
   <header class="nav">
-    <a href="/" class="brand">
-      <img src="../Resources/CloudMartLogo.png" class="nav-logo" alt="CloudMart Logo">
+    <a href="index.html" class="brand">
+      <img src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Logo.png" class="nav-logo" alt="CloudMart Logo">
       <span>CloudMart</span>
     </a>
-
-    <nav class="nav-links">
-      <a class="nav-btn" href="/">Sign in</a>
-    </nav>
   </header>
 
   <main class="page">
     <section class="card">
-      <div class="card-header">
-        <img src="../Resources/CloudMartLogo.png" class="card-logo" alt="CloudMart Logo">
-        <h1 id="modeTitle">Sign in</h1>
-      </div>
-
+      <h1 id="modeTitle">Sign in</h1>
       <p class="sub" id="modeSub">Enter your username and password to continue.</p>
 
       <div id="emailWrap" style="display:none;">
-        <label>Email (must be @my.hamptonu.edu)</label>
-        <input id="email" type="email" placeholder="nick@my.hamptonu.edu">
+        <label>Hampton Email</label>
+        <input id="email" type="email" placeholder="user@my.hamptonu.edu">
       </div>
 
       <label>Username</label>
-      <input id="username" type="text" placeholder="Choose a username">
+      <input id="username" type="text" placeholder="Username">
 
       <label>Password</label>
-      <input id="password" type="password" placeholder="Choose a password">
-
-      <div class="row">
-        <span id="hintText">Use your created account</span>
-        <a href="#" id="toggleMode">Create an account</a>
-      </div>
+      <input id="password" type="password" placeholder="Password">
 
       <button class="btn" id="primaryBtn">Sign in</button>
 
-      <div class="msg" id="message"></div>
+      <div class="row">
+        <a href="#" id="toggleMode">Need an account? Create one</a>
+        <a href="admin.html" class="admin-link">Create Admin Account</a>
+      </div>
+
+      <div id="message" class="msg"></div>
     </section>
   </main>
 
   <script>
-    // ===== API Configuration =====
     const API_BASE = "http://localhost:5001";
-
     const emailWrap = document.getElementById("emailWrap");
     const modeTitle = document.getElementById("modeTitle");
     const modeSub = document.getElementById("modeSub");
-    const hintText = document.getElementById("hintText");
     const toggleMode = document.getElementById("toggleMode");
     const primaryBtn = document.getElementById("primaryBtn");
     const message = document.getElementById("message");
-
-    const emailInput = document.getElementById("email");
-    const usernameInput = document.getElementById("username");
-    const passwordInput = document.getElementById("password");
 
     let isCreateMode = false;
 
@@ -254,104 +153,53 @@
       message.className = "msg " + (isError ? "error" : "success");
     }
 
-    function clearMsg() {
-      message.innerText = "";
-      message.className = "msg";
-    }
-
-    function validHamptonEmail(email) {
-      return typeof email === "string" && email.toLowerCase().endsWith("@my.hamptonu.edu");
-    }
-
-    function toggleUI() {
-      isCreateMode = !isCreateMode;
-
-      if (isCreateMode) {
-        modeTitle.innerText = "Create account";
-        modeSub.innerText = "Create your CloudMart account using a Hampton email.";
-        emailWrap.style.display = "block";
-        primaryBtn.innerText = "Create account";
-        toggleMode.innerText = "Already have an account? Sign in";
-        hintText.innerText = "Email must be @my.hamptonu.edu";
-      } else {
-        modeTitle.innerText = "Sign in";
-        modeSub.innerText = "Enter your username and password to continue.";
-        emailWrap.style.display = "none";
-        primaryBtn.innerText = "Sign in";
-        toggleMode.innerText = "Create an account";
-        hintText.innerText = "Use your created account";
-      }
-      clearMsg();
-    }
-
-    toggleMode.addEventListener("click", function (e) {
+    toggleMode.addEventListener("click", (e) => {
       e.preventDefault();
-      toggleUI();
+      isCreateMode = !isCreateMode;
+      emailWrap.style.display = isCreateMode ? "block" : "none";
+      modeTitle.innerText = isCreateMode ? "Create Account" : "Sign in";
+      primaryBtn.innerText = isCreateMode ? "Register" : "Sign in";
+      toggleMode.innerText = isCreateMode ? "Already have an account? Sign in" : "Need an account? Create one";
     });
 
-    async function postJSON(endpoint, data) {
-      const res = await fetch(API_BASE + endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
+    primaryBtn.addEventListener("click", async () => {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+      const email = document.getElementById("email").value.trim();
 
-      const payload = await res.json();
-
-      if (!res.ok) {
-        throw new Error(payload.error || `Request failed (${res.status})`);
-      }
-
-      return payload;
-    }
-
-    primaryBtn.addEventListener("click", async function () {
-      const email = emailInput ? emailInput.value.trim() : "";
-      const username = usernameInput.value.trim();
-      const password = passwordInput.value;
-
-      if (!username || !password) {
-        setMsg("Please enter a username and password.");
-        return;
-      }
-
-      primaryBtn.disabled = true;
-      clearMsg();
-
+      if (!username || !password) return setMsg("Username and password required.");
+      
       try {
+        const endpoint = isCreateMode ? "/api/auth/register" : "/api/auth/login";
+        const body = { username, password };
+        
         if (isCreateMode) {
-          if (!email) {
-            throw new Error("Please enter your Hampton email.");
+          if (!email.toLowerCase().endsWith("@my.hamptonu.edu")) {
+            throw new Error("Hampton email required.");
           }
-          if (!validHamptonEmail(email)) {
-            throw new Error("Email must end with @my.hamptonu.edu.");
-          }
-
-          await postJSON("/api/auth/register", { email, username, password });
-          setMsg("Account created! Switch to Sign in and log in.", false);
-
-        } else {
-          const result = await postJSON("/api/auth/login", { username, password });
-          
-          // CHANGED: store the whole user object under the key "user"
-          localStorage.setItem("user", JSON.stringify(result.user));
-
-          // CHANGED: optional extra flags for easier access to common properties
-          localStorage.setItem("isLoggedIn", "true");
-          localStorage.setItem("currentUser", result.user.username);
-          localStorage.setItem("userId", String(result.user.id));
-          window.location.href = "./index.html";
+          body.email = email;
+          body.role = "user";
         }
-      } catch (err) {
-        setMsg(err.message || "Something went wrong.");
-      } finally {
-        primaryBtn.disabled = false;
-      }
-    });
 
-    document.addEventListener("keypress", function(e) {
-      if (e.key === "Enter") {
-        primaryBtn.click();
+        const res = await fetch(API_BASE + endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Request failed");
+
+        if (!isCreateMode) {
+          // Store entire user object to include roles for index.html
+          localStorage.setItem("user", JSON.stringify(data.user));
+          window.location.href = "index.html";
+        } else {
+          setMsg("Account created! Please sign in.", false);
+          toggleMode.click();
+        }
+      } catch (err) { 
+        setMsg(err.message); 
       }
     });
   </script>

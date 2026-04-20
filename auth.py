@@ -6,9 +6,9 @@ Standalone script for testing user creation via SSH tunnel to RDS
 import bcrypt
 from DataBase.postgres import get_connection
 
-
+#adds admin role 
 def setup_database():
-    """Creates the users table if it doesn't exist."""
+    """Creates the users table with role support."""
     try:
         conn = get_connection()
         cur = conn.cursor()
@@ -18,19 +18,20 @@ def setup_database():
                 email VARCHAR(255) UNIQUE NOT NULL,
                 username VARCHAR(50) UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
+                role VARCHAR(20) DEFAULT 'user',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         conn.commit()
         cur.close()
         conn.close()
-        print("Table 'users' is ready.")
+        print("Table 'users' is ready with role support.")
     except Exception as e:
         print(f"Error setting up table: {e}")
 
 
-def create_account(email, username, plain_password):
-    """Hashes the password and saves the user to the database."""
+def create_account(email, username, plain_password, role='user'):
+    """Hashes the password and saves the user to the database with a specific role."""
     password_hash = bcrypt.hashpw(
         plain_password.encode('utf-8'), 
         bcrypt.gensalt()
@@ -41,14 +42,14 @@ def create_account(email, username, plain_password):
         cur = conn.cursor()
         
         cur.execute(
-            "INSERT INTO users(email, username, password_hash) VALUES(%s, %s, %s)",
-            (email.lower(), username, password_hash)
+            "INSERT INTO users(email, username, password_hash, role) VALUES(%s, %s, %s, %s)",
+            (email.lower(), username, password_hash, role)
         )
         
         conn.commit()
         cur.close()
         conn.close()
-        print(f"User '{username}' created successfully!")
+        print(f"User '{username}' ({role}) created successfully!")
         
     except Exception as e:
         print(f"Error creating account: {e}")
@@ -88,4 +89,6 @@ if __name__ == "__main__":
     email = input("Enter email (@my.hamptonu.edu): ")
     username = input("Enter username: ")
     password = input("Enter password: ")
-    create_account(email, username, password)
+    role_input = input("Enter role (user/admin) [default: user]: ") or "user"
+    
+    create_account(email, username, password, role_input)

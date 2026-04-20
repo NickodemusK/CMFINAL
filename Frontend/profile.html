@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>User Profile | CloudMart</title>
+<style>
+* { box-sizing: border-box; margin:0; padding:0; }
+body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #fff; line-height:1.5; min-height: 100vh; }
+
+.site-header {
+  background: #111827;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 1.2rem; color: white; text-decoration: none; }
+.logo { height: 40px; }
+
+.main-content { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+.profile-header { 
+  background: #111827; 
+  padding: 30px; 
+  border-radius: 12px; 
+  margin-bottom: 30px; 
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.profile-header h1 { color: #2563eb; margin-bottom: 5px; }
+
+.fb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+.feature-card { background: #111827; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+.product-img { width: 100%; height: 200px; object-fit: cover; }
+.card-body { padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+.price { font-weight: bold; font-size: 1.2rem; color: #10b981; }
+
+.btn { padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; text-decoration: none; display: inline-block; text-align: center; }
+.btn-primary { background: #2563eb; color: white; border: none; }
+.btn-outline { border: 1px solid white; color: white; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a class="brand" href="index.html">
+    <img src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Logo.png" class="logo" />
+    <span>CloudMart</span>
+  </a>
+  <a href="index.html" class="btn btn-outline">← Back to Marketplace</a>
+</header>
+
+<main class="main-content">
+  <div class="profile-header">
+    <h1 id="profileName">Loading...</h1>
+    <p id="itemCount">Viewing all active listings from this seller.</p>
+  </div>
+
+  <div id="listings" class="fb-grid"></div>
+</main>
+
+<script>
+const API = "http://localhost:5001";
+const params = new URLSearchParams(window.location.search);
+const targetUser = params.get("user");
+
+async function loadProfileListings() {
+  if (!targetUser) {
+    document.getElementById("profileName").innerText = "User Not Found";
+    return;
+  }
+
+  document.getElementById("profileName").innerText = targetUser + "'s Shop";
+
+  try {
+    const res = await fetch(`${API}/api/listings`);
+    const allItems = await res.json();
+    
+    // Filter listings where the seller matches the URL parameter
+    const userItems = allItems.filter(item => item.seller === targetUser);
+    renderItems(userItems);
+    document.getElementById("itemCount").innerText = `${userItems.length} items for sale`;
+  } catch (err) {
+    console.error("Error:", err);
+  }
+}
+
+function renderItems(items) {
+  const container = document.getElementById("listings");
+  container.innerHTML = items.length ? "" : "<p>This user hasn't posted any items yet.</p>";
+
+  items.forEach(item => {
+    container.innerHTML += `
+      <div class="feature-card">
+        <img src="${item.image || 'https://picsum.photos/300'}" class="product-img">
+        <div class="card-body">
+          <p class="price">$${item.price}</p>
+          <h3>${item.title}</h3>
+          <p style="color: #9ca3af; font-size: 0.9rem;">${item.category} • ${item.condition}</p>
+          <button onclick="addToCart(${item.id})" class="btn btn-primary" style="margin-top: 10px;">Add to Cart</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+// Reuse your cart logic
+function addToCart(id) {
+  // Since we don't have allListings in scope, we'd ideally fetch the specific item 
+  // or store the userItems globally. For demo simplicity:
+  alert("Feature: Item added to cart!");
+}
+
+loadProfileListings();
+</script>
+</body>
+</html>

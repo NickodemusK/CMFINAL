@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CloudMart | Create Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Matches Signin.html styling */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: #e8eefc;
+      background:
+        radial-gradient(1200px 600px at 20% 10%, #1a3a7a 0%, rgba(26, 58, 122, 0) 60%),
+        radial-gradient(900px 500px at 80% 30%, #0b5aa8 0%, rgba(11, 90, 168, 0) 55%),
+        linear-gradient(180deg, #060b1a 0%, #050814 100%);
+      min-height: 100vh;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(10px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: inherit;
+      font-weight: 700;
+    }
+
+    .nav-logo {
+      max-height: 36px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    .page {
+      display: grid;
+      place-items: center;
+      padding: 60px 16px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      padding: 22px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(10px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .card-logo {
+      width: 40px;
+      height: auto;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin: 0;
+    }
+
+    .sub {
+      margin: 10px 0 18px;
+      font-size: 14px;
+      color: rgba(232, 238, 252, 0.8);
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      margin: 12px 0 6px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(0, 0, 0, 0.25);
+      color: #e8eefc;
+      outline: none;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+    }
+
+    .btn {
+      width: 100%;
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: linear-gradient(180deg, #0b5aa8 0%, #0a2d63 100%);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .msg {
+      margin-top: 15px;
+      font-size: 13px;
+      text-align: center;
+      min-height: 18px;
+    }
+    .error { color: #f87171; }
+    .success { color: #4ade80; }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      color: rgba(232, 238, 252, 0.6);
+      text-decoration: none;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <a href="index.html" class="brand">
+      <img src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Logo.png" class="nav-logo" alt="CloudMart Logo">
+      <span>CloudMart</span>
+    </a>
+  </header>
+
+  <main class="page">
+    <div class="card">
+      <div class="card-header">
+        <img src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Logo.png" class="card-logo" alt="CloudMart Logo">
+        <h1>Admin Registration</h1>
+      </div>
+      <p class="sub">Create an administrative account for CloudMart.</p>
+      
+      <label>Hampton Email</label>
+      <input id="email" type="email" placeholder="name@my.hamptonu.edu">
+      
+      <label>Username</label>
+      <input id="username" type="text" placeholder="Admin username">
+      
+      <label>Password</label>
+      <input id="password" type="password" placeholder="Admin password">
+      
+      <label>Admin Passphrase</label>
+      <input id="passphrase" type="password" placeholder="Enter security code">
+      
+      <button class="btn" onclick="registerAdmin()">Create Admin Account</button>
+      
+      <div id="message" class="msg"></div>
+      <a href="Signin.html" class="back-link">Return to Sign In</a>
+    </div>
+  </main>
+
+  <script>
+    async function registerAdmin() {
+      const email = document.getElementById("email").value.trim();
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+      const passphrase = document.getElementById("passphrase").value;
+      const msg = document.getElementById("message");
+
+      if (!email.toLowerCase().endsWith("@my.hamptonu.edu")) {
+        msg.innerText = "Error: Requires a @my.hamptonu.edu email.";
+        msg.className = "msg error";
+        return;
+      }
+// reuiqred phrase to create an admin password
+      if (passphrase !== "softDev2") {
+        msg.innerText = "Error: Invalid Admin Passphrase.";
+        msg.className = "msg error";
+        return;
+      }
+
+      try {
+        const res = await fetch("http://localhost:5001/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, username, password, role: "admin" })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Registration failed");
+        // successful account creation message
+        msg.innerText = "Admin account created! Redirecting to Sign In...";
+        msg.className = "msg success";
+        setTimeout(() => window.location.href = "Signin.html", 2000);
+      } catch (err) {
+        msg.innerText = err.message;
+        msg.className = "msg error";
+      }
+    }
+  </script>
+</body>
+</html>

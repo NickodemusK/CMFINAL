@@ -51,7 +51,7 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
 .btn:hover { opacity: 0.85; }
 
 .btn-primary { background: #2563eb; border: none; color: white; }
-.btn-secondary { background: #10b981; border: none; color: white; }
+.btn-secondary { background: #ef4444; border: none; color: white; }
 .btn-outline { border: 1px solid white; background: transparent; color: white; }
 .full { width: 100%; }
 
@@ -178,8 +178,8 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
     <button class="btn btn-primary" onclick="goToCreatePage()">+ Sell Item</button>
     <button class="btn btn-outline" onclick="goToWishlist()">❤️ Wishlist</button>
     <button class="btn btn-secondary" onclick="goToCartPage()">🛒 Cart (<span id="cartCount">0</span>)</button>
-    <button class="btn btn-outline" onclick="showNotifications()">🔔</button>
     <span id="userDisplay"></span>
+    <button class="btn btn-outline" onclick="logout()">Sign Out</button>
   </div>
 </header>
 
@@ -203,7 +203,6 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
       <label><input type="checkbox" value="Appliances"> Appliances</label>
     </div>
 
-    <button class="btn btn-primary full" onclick="goToCreatePage()">+ Create New Listing</button>
     <button class="btn btn-outline full" onclick="applyFilters()">Apply Filters</button>
     <button class="btn btn-outline full" onclick="clearFilters()">Clear Filters</button>
   </aside>
@@ -221,23 +220,19 @@ let allListings = [];
 let wishlistItems = [];
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-// Support either "user" object or older localStorage keys
-const storedUser = JSON.parse(localStorage.getItem("user") || "null");
-const currentUserName = localStorage.getItem("currentUser");
-const currentUserId = localStorage.getItem("userId");
-
-const user = storedUser || (
-  currentUserName
-    ? {
-        id: currentUserId ? Number(currentUserId) : null,
-        username: currentUserName
-      }
-    : null
-);
+// Retrieve the user object stored during Sign In
+const user = JSON.parse(localStorage.getItem("user") || "null");
 
 if (user) {
   const el = document.getElementById("userDisplay");
   if (el) el.innerText = "Hi, " + (user.username || "User");
+} else {
+  window.location.href = "Signin.html";
+}
+
+function logout() {
+  localStorage.clear();
+  window.location.href = "Signin.html";
 }
 
 updateCartCount();
@@ -251,7 +246,6 @@ function updateCartCount() {
 function goToCreatePage() { window.location.href = "create.html"; }
 function goToCartPage() { window.location.href = "cart.html"; }
 function goToWishlist() { window.location.href = "wishlist.html"; }
-function showNotifications() { alert("No new notifications yet!"); }
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -275,21 +269,10 @@ async function loadListings() {
 }
 
 async function loadWishlist() {
-  if (!user || user.id == null) {
-    wishlistItems = [];
-    return;
-  }
-
+  if (!user || user.id == null) return;
   try {
     const res = await fetch(`${API}/api/wishlist?user_id=${user.id}`);
     const data = await res.json();
-
-    if (!res.ok) {
-      console.error("Wishlist load failed:", data.error || data);
-      wishlistItems = [];
-      return;
-    }
-
     wishlistItems = Array.isArray(data) ? data : [];
   } catch (err) {
     console.error("Wishlist error:", err);
@@ -307,14 +290,18 @@ function renderListings(data) {
   }
 
   data.forEach(item => {
+    // ADMIN CHECK: If user is an admin OR the owner, show the management buttons
+    const isAdmin = user && user.role === 'admin';
     const isOwner = user && user.id != null && Number(item.user_id) === Number(user.id);
+    const hasPermission = isAdmin || isOwner;
+
     const isSaved = wishlistItems.some(w => Number(w.id) === Number(item.id));
 
-    const safeTitle = escapeHtml(item.title || "Untitled Item");
-    const safeCategory = escapeHtml(item.category || "Uncategorized");
-    const safeCondition = escapeHtml(item.condition || "Condition not listed");
-    const safeSeller = escapeHtml(item.seller || "Unknown");
-    const safeImage = escapeHtml(item.image || "https://picsum.photos/300");
+    const safeTitle = escapeHtml(item.title);
+    const safeCategory = escapeHtml(item.category);
+    const safeCondition = escapeHtml(item.condition);
+    const safeSeller = escapeHtml(item.seller);
+    const safeImage = escapeHtml(item.image);
     const displayPrice = Number(item.price) || 0;
 
     container.innerHTML += `
@@ -338,22 +325,16 @@ function renderListings(data) {
 
           <h3>${safeTitle}</h3>
           <p class="condition">${safeCategory} • ${safeCondition}</p>
-          <p>
-            Seller:
-            <button
-              class="seller-btn"
-              onclick="filterBySeller('${safeSeller.replace(/'/g, "\\'")}')"
-            >
-              ${safeSeller}
-            </button>
-          </p>
+          <p class="muted">Seller: ${safeSeller}</p>
 
           <button onclick="addToCart(${Number(item.id)})" class="btn btn-primary full">Add to Cart</button>
 
           ${
-            isOwner ? `
-              <button onclick="editListing(${Number(item.id)})" class="btn btn-outline full">Edit</button>
-              <button onclick="deleteListing(${Number(item.id)})" class="btn btn-secondary full">Delete</button>
+            hasPermission ? `
+              <div style="display: flex; gap: 5px; margin-top: 5px;">
+                <button onclick="editListing(${Number(item.id)})" class="btn btn-outline full" style="flex:1;">Edit</button>
+                <button onclick="deleteListing(${Number(item.id)})" class="btn btn-secondary full" style="flex:1;">Delete</button>
+              </div>
             ` : ""
           }
         </div>
@@ -365,20 +346,7 @@ function renderListings(data) {
 function addToCart(id) {
   const item = allListings.find(i => Number(i.id) === Number(id));
   if (!item) return;
-
-  const cartItem = {
-    id: item.id,
-    title: item.title || "Untitled Item",
-    image: item.image || "https://picsum.photos/300",
-    price: Number(item.price) || 0,
-    category: item.category || "Uncategorized",
-    condition: item.condition || "Condition not listed",
-    seller: item.seller || "Unknown",
-    user_id: item.user_id ?? null
-  };
-
-  cart = JSON.parse(localStorage.getItem("cart")) || [];
-  cart.push(cartItem);
+  cart.push(item);
   localStorage.setItem("cart", JSON.stringify(cart));
   updateCartCount();
   alert("Added to cart!");
@@ -415,98 +383,59 @@ function clearFilters() {
   renderListings(allListings);
 }
 
-function filterBySeller(sellerName) {
-  const filtered = allListings.filter(item => (item.seller || "Unknown") === sellerName);
-  renderListings(filtered);
-}
-
 function editListing(listingId) {
   window.location.href = `create.html?edit=${listingId}`;
 }
 
 async function deleteListing(listingId) {
-  if (!user || user.id == null) {
-    alert("You must be logged in.");
-    return;
-  }
-
-  const confirmed = confirm("Are you sure you want to delete this listing?");
-  if (!confirmed) return;
+  if (!confirm("Are you sure you want to delete this listing?")) return;
 
   try {
     const res = await fetch(`${API}/api/listings/${listingId}`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ user_id: user.id })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        user_id: user.id,
+        role: user.role // Pass role so backend can authorize admin deletion
+      })
     });
 
-    const data = await res.json();
-
-    if (!res.ok) {
+    if (res.ok) {
+      alert("Listing deleted.");
+      await loadListings();
+    } else {
+      const data = await res.json();
       alert(data.error || "Failed to delete listing.");
-      return;
     }
-
-    alert("Listing deleted.");
-    await loadWishlist();
-    await loadListings();
   } catch (err) {
     console.error("Delete error:", err);
-    alert("Something went wrong while deleting the listing.");
+    alert("Error connecting to server.");
   }
 }
 
 async function toggleWishlist(listingId, isSaved) {
-  if (!user || user.id == null) {
-    alert("You must be logged in.");
-    return;
-  }
-
+  if (!user) return alert("Please log in first.");
   try {
-    if (isSaved) {
-      const res = await fetch(`${API}/api/wishlist/${listingId}?user_id=${user.id}`, {
-        method: "DELETE"
-      });
-      const data = await res.json();
+    const method = isSaved ? "DELETE" : "POST";
+    const url = isSaved ? `${API}/api/wishlist/${listingId}?user_id=${user.id}` : `${API}/api/wishlist`;
+    const body = isSaved ? null : JSON.stringify({ user_id: user.id, listing_id: listingId });
 
-      if (!res.ok) {
-        alert(data.error || "Failed to remove from wishlist.");
-        return;
-      }
-    } else {
-      const res = await fetch(`${API}/api/wishlist`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          listing_id: listingId
-        })
-      });
-      const data = await res.json();
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body
+    });
 
-      if (!res.ok) {
-        alert(data.error || "Failed to add to wishlist.");
-        return;
-      }
+    if (res.ok) {
+      await loadWishlist();
+      renderListings(allListings);
     }
-
-    await loadWishlist();
-    renderListings(allListings);
   } catch (err) {
-    console.error("Wishlist toggle error:", err);
-    alert("Something went wrong with wishlist.");
+    console.error("Wishlist error:", err);
   }
 }
 
-window.addEventListener("focus", updateCartCount);
-window.addEventListener("storage", updateCartCount);
-
 async function init() {
-  updateCartCount();
   await loadWishlist();
   await loadListings();
 }

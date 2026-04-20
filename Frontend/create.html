@@ -133,19 +133,10 @@
     }
 
     async function uploadImageToS3(file) {
-      console.log("Selected file:", file.name);
-      console.log("Detected file type:", file.type);
-
-      // Nickodemus wrote the S3 image upload code
       const presignRes = await fetch(`${API}/api/uploads/presign`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          fileName: file.name,
-          fileType: file.type
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName: file.name, fileType: file.type })
       });
 
       if (!presignRes.ok) {
@@ -153,8 +144,7 @@
         throw new Error("Failed to get presigned URL: " + errText);
       }
 
-      const { uploadUrl, imageUrl, key } = await presignRes.json();
-      console.log("Presign response:", { uploadUrl, imageUrl, key });
+      const { uploadUrl, imageUrl } = await presignRes.json();
 
       const uploadRes = await fetch(uploadUrl, {
         method: "PUT",
@@ -174,9 +164,7 @@
         const res = await fetch(`${API}/api/listings/${editId}`);
         const listing = await res.json();
 
-        if (!res.ok) {
-          throw new Error(listing.error || "Failed to load listing");
-        }
+        if (!res.ok) throw new Error(listing.error || "Failed to load listing");
 
         document.getElementById("title").value = listing.title || "";
         document.getElementById("price").value = listing.price ?? "";
@@ -216,7 +204,6 @@
           imageUrl = await uploadImageToS3(imageFile);
         }
 
-        // TJ created the listing submission logic for sending user input to the backend
         const listing = {
           user_id: Number(user.id),
           title: title,
@@ -226,38 +213,25 @@
           image: imageUrl
         };
 
-        console.log("Listing payload:", listing);
-
         let res;
+        const endpoint = isEditMode ? `${API}/api/listings/${editId}` : `${API}/api/listings`;
+        const method = isEditMode ? "PUT" : "POST";
 
-        if (isEditMode) {
-          res = await fetch(`${API}/api/listings/${editId}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify(listing)
-          });
-        } else {
-          res = await fetch(`${API}/api/listings`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify(listing)
-          });
-        }
+        res = await fetch(endpoint, {
+          method: method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(listing)
+        });
 
         if (res.ok) {
           alert(isEditMode ? "Listing updated successfully!" : "Listing created successfully!");
           window.location.href = "index.html";
         } else {
           const errText = await res.text();
-          throw new Error((isEditMode ? "Failed to update listing: " : "Failed to save listing: ") + errText);
+          throw new Error(errText);
         }
       } catch (err) {
-        console.error(isEditMode ? "Error updating listing:" : "Error creating listing:", err);
-        alert((isEditMode ? "Error updating listing: " : "Error creating listing: ") + err.message);
+        alert("Error: " + err.message);
       }
     }
   </script>

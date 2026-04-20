@@ -1,4 +1,4 @@
-#Collaboration from Howard Ames, 
+# Collaboration from Howard Ames, Nickodemus, and Gemini
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from sshtunnel import SSHTunnelForwarder
@@ -8,15 +8,16 @@ import os
 import uuid
 from dotenv import load_dotenv
 
-# Load environment variables from .env - Nickodemus
+# Load environment variables from .env
 load_dotenv()
 
-# S3 config - Nickodemus
+# S3 config
 from s3_config import s3, BUCKET_NAME, AWS_REGION
 
 app = Flask(__name__)
 CORS(app)
 
+# Database & Tunnel Configuration
 SSH_HOST = "18.190.235.250"
 SSH_USER = "ec2-user"
 SSH_KEY_PATH = os.path.join(os.path.dirname(__file__), "Resources", "ec2Test.pem")
@@ -28,7 +29,6 @@ DB_USER = "postgres"
 DB_PASSWORD = "password"
 
 tunnel = None
-
 
 def start_ssh_tunnel():
     global tunnel
@@ -43,7 +43,6 @@ def start_ssh_tunnel():
         tunnel.start()
     return tunnel
 
-
 def get_db_connection():
     tun = start_ssh_tunnel()
     return psycopg.connect(
@@ -54,17 +53,18 @@ def get_db_connection():
         password=DB_PASSWORD
     )
 
-
 def init_db():
     conn = get_db_connection()
     cur = conn.cursor()
-
+#adds role to differentiating users from admin  
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE,
         username VARCHAR(50) UNIQUE,
-        password_hash TEXT
+        password_hash TEXT,
+        role VARCHAR(20) DEFAULT 'user'
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
 
@@ -76,7 +76,8 @@ def init_db():
         price NUMERIC,
         category VARCHAR(100),
         condition VARCHAR(100),
-        image TEXT
+        image TEXT,
+        seller VARCHAR(100)
     )
     """)
 
@@ -94,7 +95,6 @@ def init_db():
     cur.close()
     conn.close()
 
-
 # ========================
 # AUTH
 # ========================
@@ -102,22 +102,24 @@ def init_db():
 def register():
     data = request.get_json()
     password_hash = bcrypt.hashpw(data["password"].encode(), bcrypt.gensalt()).decode()
+    role = data.get("role", "user") # Allow setting role (e.g., 'admin')
 
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute(
-        "INSERT INTO users (email, username, password_hash) VALUES (%s, %s, %s) RETURNING id",
-        (data["email"], data["username"], password_hash)
-    )
-
-    user_id = cur.fetchone()[0]
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({"user_id": user_id}), 201
-
+    try:
+        cur.execute(
+            "INSERT INTO users (email, username, password_hash, role) VALUES (%s, %s, %s, %s) RETURNING id",
+            (data["email"], data["username"], password_hash, role)
+        )
+        user_id = cur.fetchone()[0]
+        conn.commit()
+        return jsonify({"user_id": user_id, "role": role}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        cur.close()
+        conn.close()
 
 @app.route("/api/auth/login", methods=["POST"])
 def login():
@@ -126,8 +128,9 @@ def login():
     conn = get_db_connection()
     cur = conn.cursor()
 
+    # adds role column to the SELECT statement
     cur.execute(
-        "SELECT id, username, password_hash FROM users WHERE username = %s",
+        "SELECT id, username, password_hash, email, role FROM users WHERE username = %s",
         (data["username"],)
     )
     user = cur.fetchone()
@@ -138,54 +141,18 @@ def login():
     if not user or not bcrypt.checkpw(data["password"].encode(), user[2].encode()):
         return jsonify({"error": "Invalid credentials"}), 401
 
-    return jsonify({"user": {"id": user[0], "username": user[1]}}), 200
-
-
-# ========================
-# S3 Nickodemus 
-# ========================
-@app.route("/api/uploads/presign", methods=["POST"])
-def presign_upload():
-    try:
-        data = request.get_json()
-        file_name = data.get("fileName")
-        file_type = data.get("fileType")
-
-        if not file_name:
-            return jsonify({"error": "fileName is required"}), 400
-
-        if not BUCKET_NAME or not AWS_REGION:
-            return jsonify({"error": "S3 environment variables are not configured correctly"}), 500
-
-        ext = file_name.split(".")[-1].lower()
-        key = f"listings/{uuid.uuid4()}.{ext}"
-
-        upload_url = s3.generate_presigned_url(
-            ClientMethod="put_object",
-            Params={
-                "Bucket": BUCKET_NAME,
-                "Key": key,
-                "ContentType": file_type
-            },
-            ExpiresIn=300,
-            HttpMethod="PUT"
-        )
-
-        image_url = f"https://{BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{key}"
-
-        return jsonify({
-            "uploadUrl": upload_url,
-            "key": key,
-            "imageUrl": image_url
-        }), 200
-
-    except Exception as e:
-        print(f"Presign error: {e}")
-        return jsonify({"error": "Failed to generate presigned URL"}), 500
-
+    # Returns the user object to the frontend
+    return jsonify({
+        "user": {
+            "id": user[0],
+            "username": user[1],
+            "email": user[3],
+            "role": user[4]
+        }
+    }), 200
 
 # ========================
-# LISTINGS
+# LISTINGS (with Admin Bypass)
 # ========================
 @app.route("/api/listings", methods=["POST"])
 def create_listing():
@@ -195,17 +162,17 @@ def create_listing():
     conn = get_db_connection()
     cur = conn.cursor()
 
+    # Gets the seller name for the listing
+    cur.execute("SELECT username FROM users WHERE id = %s", (data['user_id'],))
+    seller_name = cur.fetchone()[0]
+
     cur.execute("""
-        INSERT INTO listings (user_id, title, price, category, condition, image)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        INSERT INTO listings (user_id, title, price, category, condition, image, seller)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
         RETURNING id
     """, (
-        data["user_id"],
-        data["title"],
-        data["price"],
-        data["category"],
-        data["condition"],
-        image
+        data["user_id"], data["title"], data["price"], 
+        data["category"], data["condition"], image, seller_name
     ))
 
     new_listing_id = cur.fetchone()[0]
@@ -215,98 +182,26 @@ def create_listing():
 
     return jsonify({"message": "Listing created", "id": new_listing_id}), 201
 
-
 @app.route("/api/listings", methods=["GET"])
 def get_listings():
-    category = request.args.get("category")
-    search = request.args.get("search")
-
     conn = get_db_connection()
     cur = conn.cursor()
-
-    query = """
-        SELECT l.id, l.user_id, l.title, l.price, l.category, l.condition, l.image, u.username
-        FROM listings l
-        LEFT JOIN users u ON l.user_id = u.id
-        WHERE 1=1
-    """
-    params = []
-
-    if category:
-        query += " AND l.category = %s"
-        params.append(category)
-
-    if search:
-        query += " AND LOWER(l.title) LIKE %s"
-        params.append(f"%{search.lower()}%")
-
-    query += " ORDER BY l.id DESC"
-
-    cur.execute(query, params)
+    cur.execute("SELECT * FROM listings ORDER BY id DESC")
     rows = cur.fetchall()
     cur.close()
     conn.close()
 
-    return jsonify([
-        {
-            "id": r[0],
-            "user_id": r[1],
-            "title": r[2],
-            "price": float(r[3]) if r[3] is not None else None,
-            "category": r[4],
-            "condition": r[5],
-            "image": r[6],
-            "seller": r[7]
-        }
-        for r in rows
-    ]), 200
-
-
-@app.route("/api/listings/<int:listing_id>", methods=["GET"])
-def get_single_listing(listing_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT l.id, l.user_id, l.title, l.price, l.category, l.condition, l.image, u.username
-        FROM listings l
-        LEFT JOIN users u ON l.user_id = u.id
-        WHERE l.id = %s
-    """, (listing_id,))
-
-    row = cur.fetchone()
-    cur.close()
-    conn.close()
-
-    if not row:
-        return jsonify({"error": "Listing not found"}), 404
-
-    return jsonify({
-        "id": row[0],
-        "user_id": row[1],
-        "title": row[2],
-        "price": float(row[3]) if row[3] is not None else None,
-        "category": row[4],
-        "condition": row[5],
-        "image": row[6],
-        "seller": row[7]
-    }), 200
-
+    return jsonify([{
+        "id": r[0], "user_id": r[1], "title": r[2], 
+        "price": float(r[3]), "category": r[4], 
+        "condition": r[5], "image": r[6], "seller": r[7]
+    } for r in rows]), 200
 
 @app.route("/api/listings/<int:listing_id>", methods=["PUT"])
 def update_listing(listing_id):
     data = request.get_json()
     user_id = data.get("user_id")
-    title = data.get("title")
-    price = data.get("price")
-    category = data.get("category")
-    condition = data.get("condition")
-    image = data.get("image")
-
-    try:
-        user_id = int(user_id)
-    except (TypeError, ValueError):
-        return jsonify({"error": "Invalid user_id"}), 400
+    user_role = data.get("role") # Role passed from frontend
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -319,7 +214,8 @@ def update_listing(listing_id):
         conn.close()
         return jsonify({"error": "Listing not found"}), 404
 
-    if int(row[0]) != user_id:
+    # checks if user is an admin or owner for editing capabilities
+    if user_role != 'admin' and int(row[0]) != int(user_id):
         cur.close()
         conn.close()
         return jsonify({"error": "Forbidden"}), 403
@@ -328,39 +224,19 @@ def update_listing(listing_id):
         UPDATE listings
         SET title = %s, price = %s, category = %s, condition = %s, image = %s
         WHERE id = %s
-        RETURNING id, user_id, title, price, category, condition, image
-    """, (title, price, category, condition, image, listing_id))
+    """, (data['title'], data['price'], data['category'], data['condition'], data['image'], listing_id))
 
-    updated = cur.fetchone()
     conn.commit()
     cur.close()
     conn.close()
 
-    return jsonify({
-        "listing": {
-            "id": updated[0],
-            "user_id": updated[1],
-            "title": updated[2],
-            "price": float(updated[3]) if updated[3] is not None else None,
-            "category": updated[4],
-            "condition": updated[5],
-            "image": updated[6]
-        }
-    }), 200
-
+    return jsonify({"success": True}), 200
 
 @app.route("/api/listings/<int:listing_id>", methods=["DELETE"])
 def delete_listing(listing_id):
-    data = request.get_json(silent=True) or {}
-    user_id = data.get("user_id") or request.args.get("user_id")
-
-    if user_id is None:
-        return jsonify({"error": "user_id is required"}), 400
-
-    try:
-        user_id = int(user_id)
-    except (TypeError, ValueError):
-        return jsonify({"error": "Invalid user_id"}), 400
+    data = request.get_json()
+    user_id = data.get("user_id")
+    user_role = data.get("role") # Role passed from frontend
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -373,7 +249,8 @@ def delete_listing(listing_id):
         conn.close()
         return jsonify({"error": "Listing not found"}), 404
 
-    if int(row[0]) != user_id:
+    # verifies the user is either an admin or owner
+    if user_role != 'admin' and int(row[0]) != int(user_id):
         cur.close()
         conn.close()
         return jsonify({"error": "Forbidden"}), 403
@@ -384,130 +261,6 @@ def delete_listing(listing_id):
     conn.close()
 
     return jsonify({"success": True}), 200
-
-
-# ========================
-# WISHLIST
-# ========================
-@app.route("/api/wishlist", methods=["GET"])
-def get_wishlist():
-    user_id = request.args.get("user_id")
-    if not user_id:
-        return jsonify({"error": "user_id is required"}), 400
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT l.id, l.user_id, l.title, l.price, l.category, l.condition, l.image, u.username
-        FROM wishlist w
-        JOIN listings l ON w.listing_id = l.id
-        LEFT JOIN users u ON l.user_id = u.id
-        WHERE w.user_id = %s
-        ORDER BY w.created_at DESC
-    """, (user_id,))
-
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-
-    return jsonify([
-        {
-            "id": r[0],
-            "user_id": r[1],
-            "title": r[2],
-            "price": float(r[3]) if r[3] is not None else None,
-            "category": r[4],
-            "condition": r[5],
-            "image": r[6],
-            "seller": r[7]
-        }
-        for r in rows
-    ]), 200
-
-
-@app.route("/api/wishlist", methods=["POST"])
-def add_to_wishlist():
-    data = request.get_json()
-    user_id = data.get("user_id")
-    listing_id = data.get("listing_id")
-
-    if not user_id or not listing_id:
-        return jsonify({"error": "user_id and listing_id are required"}), 400
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    try:
-        cur.execute(
-            "INSERT INTO wishlist (user_id, listing_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
-            (user_id, listing_id)
-        )
-        conn.commit()
-    except Exception as e:
-        conn.rollback()
-        cur.close()
-        conn.close()
-        return jsonify({"error": str(e)}), 500
-
-    cur.close()
-    conn.close()
-
-    return jsonify({"message": "Added to wishlist"}), 201
-
-
-@app.route("/api/wishlist/<int:listing_id>", methods=["DELETE"])
-def remove_from_wishlist(listing_id):
-    user_id = request.args.get("user_id")
-    if not user_id:
-        return jsonify({"error": "user_id is required"}), 400
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        "DELETE FROM wishlist WHERE user_id = %s AND listing_id = %s",
-        (user_id, listing_id)
-    )
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({"message": "Removed from wishlist"}), 200
-
-
-# ========================
-# SERVE FRONTEND FILES
-# ========================
-@app.route("/")
-def serve_signin():
-    return send_from_directory("Frontend", "Signin.html")
-
-
-@app.route("/home")
-def serve_index():
-    return send_from_directory("Frontend", "index.html")
-
-
-@app.route("/create")
-def serve_create():
-    return send_from_directory("Frontend", "create.html")
-
-
-@app.route("/wishlist")
-def serve_wishlist():
-    return send_from_directory("Frontend", "wishlist.html")
-
-
-@app.route("/Frontend/<path:filename>")
-def serve_frontend_files(filename):
-    return send_from_directory("Frontend", filename)
-
-
-@app.route("/Resources/<path:filename>")
-def serve_resources(filename):
-    return send_from_directory("Resources", filename)
 
 
 if __name__ == "__main__":
