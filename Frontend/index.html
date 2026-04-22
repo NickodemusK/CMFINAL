@@ -278,14 +278,20 @@ async function loadListings() {
   try {
     const res = await fetch(`${API}/api/listings`);
     const data = await res.json();
-    allListings = Array.isArray(data) ? data : [];
+
+    allListings = Array.isArray(data)
+      ? data.filter(item => {
+          if (!user || user.id == null) return true;
+          return Number(item.user_id) !== Number(user.id);
+        })
+      : [];
+
     renderListings(allListings);
   } catch (err) {
     console.error("Error loading listings:", err);
     document.getElementById("listings").innerHTML = "<p class='muted'>Unable to load listings right now.</p>";
   }
 }
-
 async function loadWishlist() {
   if (!user || user.id == null) return;
   try {
