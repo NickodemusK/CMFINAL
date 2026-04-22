@@ -136,6 +136,7 @@ def register():
         conn.commit()
         return jsonify({"user_id": user_id, "role": role}), 201
     except Exception as e:
+        conn.rollback()
         return jsonify({"error": str(e)}), 400
     finally:
         cur.close()
@@ -172,6 +173,46 @@ def login():
 
 
 # ========================
+# S3 UPLOADS
+# ========================
+@app.route("/api/uploads/presign", methods=["POST", "OPTIONS"])
+def generate_presigned_upload_url():
+    if request.method == "OPTIONS":
+        return jsonify({"ok": True}), 200
+
+    data = request.get_json() or {}
+    file_name = data.get("fileName")
+    file_type = data.get("fileType")
+
+    if not file_name or not file_type:
+        return jsonify({"error": "fileName and fileType are required"}), 400
+
+    try:
+        ext = os.path.splitext(file_name)[1] or ""
+        unique_name = f"listings/{uuid.uuid4()}{ext}"
+
+        upload_url = s3.generate_presigned_url(
+            "put_object",
+            Params={
+                "Bucket": BUCKET_NAME,
+                "Key": unique_name,
+                "ContentType": file_type
+            },
+            ExpiresIn=300
+        )
+
+        image_url = f"https://{BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{unique_name}"
+
+        return jsonify({
+            "uploadUrl": upload_url,
+            "imageUrl": image_url
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ========================
 # LISTINGS
 # ========================
 @app.route("/api/listings", methods=["POST"])
@@ -182,31 +223,36 @@ def create_listing():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT username FROM users WHERE id = %s", (data["user_id"],))
-    seller_row = cur.fetchone()
-    seller_name = seller_row[0] if seller_row else "Unknown"
+    try:
+        cur.execute("SELECT username FROM users WHERE id = %s", (data["user_id"],))
+        seller_row = cur.fetchone()
+        seller_name = seller_row[0] if seller_row else "Unknown"
 
-    cur.execute("""
-        INSERT INTO listings (user_id, title, price, category, condition, image, seller, status)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        RETURNING id
-    """, (
-        data["user_id"],
-        data["title"],
-        data["price"],
-        data["category"],
-        data["condition"],
-        image,
-        seller_name,
-        "active"
-    ))
+        cur.execute("""
+            INSERT INTO listings (user_id, title, price, category, condition, image, seller, status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (
+            data["user_id"],
+            data["title"],
+            data["price"],
+            data["category"],
+            data["condition"],
+            image,
+            seller_name,
+            "active"
+        ))
 
-    new_listing_id = cur.fetchone()[0]
-    conn.commit()
-    cur.close()
-    conn.close()
+        new_listing_id = cur.fetchone()[0]
+        conn.commit()
 
-    return jsonify({"message": "Listing created", "id": new_listing_id}), 201
+        return jsonify({"message": "Listing created", "id": new_listing_id}), 201
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        cur.close()
+        conn.close()
 
 
 # Homepage only shows ACTIVE listings
@@ -249,6 +295,49 @@ def get_listings():
         "status": r[8],
         "buyer_email": r[9]
     } for r in rows]), 200
+
+
+@app.route("/api/listings/<int:listing_id>", methods=["GET"])
+def get_listing_by_id(listing_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            l.id,
+            l.user_id,
+            l.title,
+            l.price,
+            l.category,
+            l.condition,
+            l.image,
+            COALESCE(NULLIF(l.seller, ''), u.username) AS seller,
+            COALESCE(l.status, 'active') AS status,
+            l.buyer_email
+        FROM listings l
+        LEFT JOIN users u ON l.user_id = u.id
+        WHERE l.id = %s
+    """, (listing_id,))
+
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if not row:
+        return jsonify({"error": "Listing not found"}), 404
+
+    return jsonify({
+        "id": row[0],
+        "user_id": row[1],
+        "title": row[2],
+        "price": float(row[3]) if row[3] is not None else 0,
+        "category": row[4],
+        "condition": row[5],
+        "image": row[6],
+        "seller": row[7],
+        "status": row[8],
+        "buyer_email": row[9]
+    }), 200
 
 
 @app.route("/api/listings/<int:listing_id>", methods=["PUT"])
