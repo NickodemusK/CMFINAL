@@ -6,7 +6,6 @@
 <title>CloudMart Marketplace</title>
 <link rel="stylesheet" href="styles.css" />
 <style>
-  /* WISHLIST FEATURES CREATED BY HOWARD AMES III*/
 * { box-sizing: border-box; margin:0; padding:0; }
 body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #fff; line-height:1.5; }
 
@@ -54,6 +53,18 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
 .btn-secondary { background: #ef4444; border: none; color: white; }
 .btn-outline { border: 1px solid white; background: transparent; color: white; }
 .full { width: 100%; }
+
+.user-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font: inherit;
+  padding: 0 4px;
+}
+.user-btn:hover {
+  color: #93c5fd;
+}
 
 .fb-layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 70px); }
 
@@ -178,7 +189,7 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
     <button class="btn btn-primary" onclick="goToCreatePage()">+ Sell Item</button>
     <button class="btn btn-outline" onclick="goToWishlist()">❤️ Wishlist</button>
     <button class="btn btn-secondary" onclick="goToCartPage()">🛒 Cart (<span id="cartCount">0</span>)</button>
-    <span id="userDisplay"></span>
+    <button id="userDisplay" class="user-btn" onclick="goToMyListings()"></button>
     <button class="btn btn-outline" onclick="logout()">Sign Out</button>
   </div>
 </header>
@@ -219,8 +230,6 @@ const API = "http://localhost:5001";
 let allListings = [];
 let wishlistItems = [];
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
-
-// Retrieve the user object stored during Sign In
 const user = JSON.parse(localStorage.getItem("user") || "null");
 
 if (user) {
@@ -246,6 +255,15 @@ function updateCartCount() {
 function goToCreatePage() { window.location.href = "create.html"; }
 function goToCartPage() { window.location.href = "cart.html"; }
 function goToWishlist() { window.location.href = "wishlist.html"; }
+
+function goToSellerListings(sellerName) {
+  window.location.href = `profile.html?seller=${encodeURIComponent(sellerName)}`;
+}
+
+function goToMyListings() {
+  if (!user || !user.username) return;
+  window.location.href = `profile.html?seller=${encodeURIComponent(user.username)}`;
+}
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -290,8 +308,7 @@ function renderListings(data) {
   }
 
   data.forEach(item => {
-    // ADMIN CHECK: If user is an admin OR the owner, show the management buttons
-    const isAdmin = user && user.role === 'admin';
+    const isAdmin = user && user.role === "admin";
     const isOwner = user && user.id != null && Number(item.user_id) === Number(user.id);
     const hasPermission = isAdmin || isOwner;
 
@@ -300,9 +317,13 @@ function renderListings(data) {
     const safeTitle = escapeHtml(item.title);
     const safeCategory = escapeHtml(item.category);
     const safeCondition = escapeHtml(item.condition);
-    const safeSeller = escapeHtml(item.seller);
+    const safeSeller = escapeHtml(item.seller || "");
     const safeImage = escapeHtml(item.image);
     const displayPrice = Number(item.price) || 0;
+
+    const sellerMarkup = safeSeller
+      ? `<button class="seller-btn" onclick="goToSellerListings('${safeSeller}')">${safeSeller}</button>`
+      : `<span>Unknown</span>`;
 
     container.innerHTML += `
       <article class="feature-card">
@@ -325,7 +346,7 @@ function renderListings(data) {
 
           <h3>${safeTitle}</h3>
           <p class="condition">${safeCategory} • ${safeCondition}</p>
-          <p class="muted">Seller: ${safeSeller}</p>
+          <p class="muted">Seller: ${sellerMarkup}</p>
 
           <button onclick="addToCart(${Number(item.id)})" class="btn btn-primary full">Add to Cart</button>
 
@@ -394,9 +415,9 @@ async function deleteListing(listingId) {
     const res = await fetch(`${API}/api/listings/${listingId}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         user_id: user.id,
-        role: user.role // Pass role so backend can authorize admin deletion
+        role: user.role
       })
     });
 

@@ -5,113 +5,392 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>User Profile | CloudMart</title>
 <style>
-* { box-sizing: border-box; margin:0; padding:0; }
-body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #fff; line-height:1.5; min-height: 100vh; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, Arial, sans-serif;
+  background: #020b2a;
+  color: white;
+  min-height: 100vh;
+}
 
 .site-header {
-  background: #111827;
+  background: #09152f;
   padding: 12px 20px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 1.2rem; color: white; text-decoration: none; }
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
 .logo { height: 40px; }
 
-.main-content { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
-.profile-header { 
-  background: #111827; 
-  padding: 30px; 
-  border-radius: 12px; 
-  margin-bottom: 30px; 
-  border: 1px solid rgba(255,255,255,0.1);
+.back-btn {
+  border: 1px solid white;
+  background: transparent;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
 }
-.profile-header h1 { color: #2563eb; margin-bottom: 5px; }
 
-.fb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-.feature-card { background: #111827; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
-.product-img { width: 100%; height: 200px; object-fit: cover; }
-.card-body { padding: 15px; display: flex; flex-direction: column; gap: 8px; }
-.price { font-weight: bold; font-size: 1.2rem; color: #10b981; }
+.back-btn:hover { opacity: 0.85; }
 
-.btn { padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; text-decoration: none; display: inline-block; text-align: center; }
-.btn-primary { background: #2563eb; color: white; border: none; }
-.btn-outline { border: 1px solid white; color: white; }
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.hero {
+  background: rgba(17, 24, 39, 0.75);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 28px;
+}
+
+.hero h1 {
+  font-size: 2rem;
+  color: #3b82f6;
+  margin-bottom: 10px;
+}
+
+.hero p {
+  color: #d1d5db;
+  font-size: 1rem;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  margin: 28px 0 14px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.card {
+  background: #111827;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.card img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  background: #1f2937;
+}
+
+.card-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.price {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.meta {
+  color: #9ca3af;
+  font-size: 0.92rem;
+}
+
+.badge {
+  display: inline-block;
+  width: fit-content;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.badge.active {
+  background: rgba(34,197,94,0.15);
+  color: #4ade80;
+  border: 1px solid rgba(74,222,128,0.35);
+}
+
+.badge.sold {
+  background: rgba(239,68,68,0.15);
+  color: #f87171;
+  border: 1px solid rgba(248,113,113,0.35);
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  flex: 1;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: white;
+}
+
+.btn-secondary {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-outline {
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+.empty {
+  color: #9ca3af;
+  padding: 10px 2px;
+}
+
+@media (max-width: 1100px) {
+  .grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 850px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 560px) {
+  .grid { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
-
 <header class="site-header">
   <a class="brand" href="index.html">
-    <img src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Logo.png" class="logo" />
+    <img src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Logo.png" class="logo" alt="CloudMart Logo">
     <span>CloudMart</span>
   </a>
-  <a href="index.html" class="btn btn-outline">← Back to Marketplace</a>
+  <button class="back-btn" onclick="window.location.href='index.html'">← Back to Marketplace</button>
 </header>
 
-<main class="main-content">
-  <div class="profile-header">
+<main class="page">
+  <section class="hero">
     <h1 id="profileName">Loading...</h1>
-    <p id="itemCount">Viewing all active listings from this seller.</p>
-  </div>
+    <p id="profileSub">Viewing this seller's listings.</p>
+  </section>
 
-  <div id="listings" class="fb-grid"></div>
+  <h2 class="section-title">Active Listings</h2>
+  <div id="activeListings" class="grid"></div>
+  <p id="activeEmpty" class="empty" style="display:none;">No active listings found.</p>
+
+  <h2 class="section-title">Sold Listings</h2>
+  <div id="soldListings" class="grid"></div>
+  <p id="soldEmpty" class="empty" style="display:none;">No sold listings found.</p>
 </main>
 
 <script>
 const API = "http://localhost:5001";
 const params = new URLSearchParams(window.location.search);
-const targetUser = params.get("user");
+const seller = params.get("seller");
 
-async function loadProfileListings() {
-  if (!targetUser) {
-    document.getElementById("profileName").innerText = "User Not Found";
+const loggedInUser = JSON.parse(localStorage.getItem("user") || "null");
+
+const profileName = document.getElementById("profileName");
+const profileSub = document.getElementById("profileSub");
+const activeListingsEl = document.getElementById("activeListings");
+const soldListingsEl = document.getElementById("soldListings");
+const activeEmpty = document.getElementById("activeEmpty");
+const soldEmpty = document.getElementById("soldEmpty");
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function isViewingOwnProfile() {
+  if (!loggedInUser || !loggedInUser.username || !seller) return false;
+  return loggedInUser.username.toLowerCase() === seller.toLowerCase();
+}
+
+function renderCard(item, isOwnProfile) {
+  const safeTitle = escapeHtml(item.title);
+  const safeCategory = escapeHtml(item.category);
+  const safeCondition = escapeHtml(item.condition);
+  const safeImage = escapeHtml(item.image);
+  const safeBuyerEmail = escapeHtml(item.buyer_email || "");
+  const displayPrice = Number(item.price || 0).toFixed(2);
+  const status = (item.status || "active").toLowerCase();
+
+  let actionButtons = "";
+
+  if (isOwnProfile && status === "active") {
+    actionButtons = `
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="markAsSold(${Number(item.id)})">Mark as Sold</button>
+      </div>
+    `;
+  }
+
+  if (isOwnProfile && status === "sold") {
+    actionButtons = `
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="markAsActive(${Number(item.id)})">Mark Active Again</button>
+      </div>
+    `;
+  }
+
+  return `
+    <article class="card">
+      <img src="${safeImage}" alt="${safeTitle}">
+      <div class="card-body">
+        <div class="price">$${displayPrice}</div>
+        <h3>${safeTitle}</h3>
+        <p class="meta">${safeCategory} • ${safeCondition}</p>
+        <span class="badge ${status === "sold" ? "sold" : "active"}">${status === "sold" ? "Sold" : "Active"}</span>
+        ${status === "sold" && safeBuyerEmail ? `<p class="meta">Buyer: ${safeBuyerEmail}</p>` : ""}
+        ${actionButtons}
+      </div>
+    </article>
+  `;
+}
+
+async function loadProfile() {
+  if (!seller) {
+    profileName.innerText = "User Not Found";
+    profileSub.innerText = "No seller was provided.";
     return;
   }
 
-  document.getElementById("profileName").innerText = targetUser + "'s Shop";
-
   try {
-    const res = await fetch(`${API}/api/listings`);
-    const allItems = await res.json();
-    
-    // Filter listings where the seller matches the URL parameter
-    const userItems = allItems.filter(item => item.seller === targetUser);
-    renderItems(userItems);
-    document.getElementById("itemCount").innerText = `${userItems.length} items for sale`;
+    const userRes = await fetch(`${API}/api/users/by-username/${encodeURIComponent(seller)}`);
+    if (userRes.ok) {
+      const userData = await userRes.json();
+      profileName.innerText = userData.username;
+      profileSub.innerText = isViewingOwnProfile()
+        ? "These are your active and sold listings."
+        : `Viewing ${userData.username}'s active and sold listings.`;
+    } else {
+      profileName.innerText = "User Not Found";
+      profileSub.innerText = "Viewing this seller's listings.";
+    }
+
+    const listingsRes = await fetch(`${API}/api/listings/by-seller/${encodeURIComponent(seller)}`);
+    const listings = await listingsRes.json();
+
+    const activeListings = Array.isArray(listings)
+      ? listings.filter(item => (item.status || "active").toLowerCase() === "active")
+      : [];
+
+    const soldListings = Array.isArray(listings)
+      ? listings.filter(item => (item.status || "active").toLowerCase() === "sold")
+      : [];
+
+    activeListingsEl.innerHTML = activeListings.map(item => renderCard(item, isViewingOwnProfile())).join("");
+    soldListingsEl.innerHTML = soldListings.map(item => renderCard(item, isViewingOwnProfile())).join("");
+
+    activeEmpty.style.display = activeListings.length ? "none" : "block";
+    soldEmpty.style.display = soldListings.length ? "none" : "block";
   } catch (err) {
-    console.error("Error:", err);
+    console.error(err);
+    profileName.innerText = "Error Loading Profile";
+    profileSub.innerText = "Could not load seller information.";
   }
 }
 
-function renderItems(items) {
-  const container = document.getElementById("listings");
-  container.innerHTML = items.length ? "" : "<p>This user hasn't posted any items yet.</p>";
+async function markAsSold(listingId) {
+  if (!loggedInUser) {
+    alert("Please sign in first.");
+    return;
+  }
 
-  items.forEach(item => {
-    container.innerHTML += `
-      <div class="feature-card">
-        <img src="${item.image || 'https://picsum.photos/300'}" class="product-img">
-        <div class="card-body">
-          <p class="price">$${item.price}</p>
-          <h3>${item.title}</h3>
-          <p style="color: #9ca3af; font-size: 0.9rem;">${item.category} • ${item.condition}</p>
-          <button onclick="addToCart(${item.id})" class="btn btn-primary" style="margin-top: 10px;">Add to Cart</button>
-        </div>
-      </div>
-    `;
-  });
+  const buyerEmail = prompt("Enter the buyer's email:");
+  if (!buyerEmail || !buyerEmail.trim()) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/api/listings/${listingId}/mark-sold`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: loggedInUser.id,
+        role: loggedInUser.role,
+        buyer_email: buyerEmail.trim()
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Failed to mark listing as sold.");
+      return;
+    }
+
+    alert("Listing marked as sold.");
+    loadProfile();
+  } catch (err) {
+    console.error(err);
+    alert("Error connecting to server.");
+  }
 }
 
-// Reuse your cart logic
-function addToCart(id) {
-  // Since we don't have allListings in scope, we'd ideally fetch the specific item 
-  // or store the userItems globally. For demo simplicity:
-  alert("Feature: Item added to cart!");
+async function markAsActive(listingId) {
+  if (!loggedInUser) {
+    alert("Please sign in first.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/api/listings/${listingId}/mark-active`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: loggedInUser.id,
+        role: loggedInUser.role
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Failed to move listing back to active.");
+      return;
+    }
+
+    alert("Listing moved back to active.");
+    loadProfile();
+  } catch (err) {
+    console.error(err);
+    alert("Error connecting to server.");
+  }
 }
 
-loadProfileListings();
+loadProfile();
 </script>
 </body>
 </html>
