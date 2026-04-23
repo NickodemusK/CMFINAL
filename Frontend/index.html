@@ -334,6 +334,7 @@ function renderListings(data) {
     const safeCategory = escapeHtml(item.category);
     const safeCondition = escapeHtml(item.condition);
     const safeSeller = escapeHtml(item.seller || "");
+    const safeSellerEmail = escapeHtml(item.seller_email || "No email available");
     const safeImage = escapeHtml(item.image);
     const displayPrice = Number(item.price) || 0;
 
@@ -352,6 +353,7 @@ function renderListings(data) {
       <h3>${safeTitle}</h3>
       <p class="condition">${safeCategory} • ${safeCondition}</p>
       <p class="muted">Seller: ${sellerMarkup}</p>
+      <p class="muted">Email: ${safeSellerEmail}</p>
 
       ${
         hasPermission ? `
