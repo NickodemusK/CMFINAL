@@ -1,209 +1,311 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>CloudMart | Create Admin</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CloudMart Admin Dashboard</title>
   <style>
-    /* Matches Signin.html styling */
+    * { box-sizing: border-box; margin:0; padding:0; }
+
     body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      color: #e8eefc;
-      background:
-        radial-gradient(1200px 600px at 20% 10%, #1a3a7a 0%, rgba(26, 58, 122, 0) 60%),
-        radial-gradient(900px 500px at 80% 30%, #0b5aa8 0%, rgba(11, 90, 168, 0) 55%),
-        linear-gradient(180deg, #060b1a 0%, #050814 100%);
-      min-height: 100vh;
+      font-family: system-ui, Arial, sans-serif;
+      background: #0b1020;
+      color: #fff;
+      line-height: 1.5;
+      padding: 20px;
     }
 
-    .nav {
+    .site-header {
+      background: #111827;
+      padding: 12px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      padding: 16px 28px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(0, 0, 0, 0.15);
-      backdrop-filter: blur(10px);
-    }
-
-    .brand {
-      display: flex;
       align-items: center;
-      gap: 10px;
-      text-decoration: none;
-      color: inherit;
-      font-weight: 700;
-    }
-
-    .nav-logo {
-      max-height: 36px;
-      width: auto;
-      object-fit: contain;
-      display: block;
-    }
-
-    .page {
-      display: grid;
-      place-items: center;
-      padding: 60px 16px;
-    }
-
-    .card {
-      width: 100%;
-      max-width: 420px;
-      padding: 22px;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-      backdrop-filter: blur(10px);
-    }
-
-    .card-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-
-    .card-logo {
-      width: 40px;
-      height: auto;
-    }
-
-    h1 {
-      font-size: 22px;
-      margin: 0;
-    }
-
-    .sub {
-      margin: 10px 0 18px;
-      font-size: 14px;
-      color: rgba(232, 238, 252, 0.8);
-    }
-
-    label {
-      display: block;
-      font-size: 13px;
-      margin: 12px 0 6px;
-    }
-
-    input {
-      width: 100%;
-      padding: 12px;
       border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      background: rgba(0, 0, 0, 0.25);
-      color: #e8eefc;
-      outline: none;
-      box-sizing: border-box;
-      margin-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    .title-wrap h1 {
+      font-size: 1.5rem;
+      margin-bottom: 4px;
+    }
+
+    .muted {
+      color: #9ca3af;
+      font-size: 0.95rem;
     }
 
     .btn {
-      width: 100%;
-      margin-top: 12px;
-      padding: 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      background: linear-gradient(180deg, #0b5aa8 0%, #0a2d63 100%);
-      color: #fff;
-      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 8px;
       cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+      border: none;
     }
 
-    .msg {
-      margin-top: 15px;
-      font-size: 13px;
-      text-align: center;
-      min-height: 18px;
-    }
-    .error { color: #f87171; }
-    .success { color: #4ade80; }
+    .btn:hover { opacity: 0.85; }
 
-    .back-link {
-      display: block;
-      text-align: center;
-      margin-top: 20px;
-      color: rgba(232, 238, 252, 0.6);
-      text-decoration: none;
-      font-size: 13px;
+    .btn-outline {
+      border: 1px solid white;
+      background: transparent;
+      color: white;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .metric-btn {
+      background: #111827;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 18px;
+      text-align: left;
+      cursor: pointer;
+      color: white;
+      transition: 0.2s;
+    }
+
+    .metric-btn:hover {
+      transform: translateY(-2px);
+      border-color: rgba(147,197,253,0.7);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    }
+
+    .metric-btn h3 {
+      font-size: 1rem;
+      margin-bottom: 10px;
+      color: #9ca3af;
+    }
+
+    .metric-value {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #93c5fd;
+    }
+
+    .panel {
+      background: #111827;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(255,255,255,0.1);
+      overflow-x: auto;
+    }
+
+    .panel h2 {
+      margin-bottom: 14px;
+      font-size: 1.2rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 0.95rem;
+      vertical-align: top;
+    }
+
+    th {
+      color: #93c5fd;
+      font-weight: 700;
+      background: rgba(255,255,255,0.03);
+    }
+
+    tr:hover td {
+      background: rgba(255,255,255,0.03);
+    }
+
+    @media (max-width: 1000px) {
+      .metrics-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .site-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
     }
   </style>
 </head>
 <body>
-  <header class="nav">
-    <a href="index.html" class="brand">
-      <img src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Logo.png" class="nav-logo" alt="CloudMart Logo">
-      <span>CloudMart</span>
-    </a>
+  <header class="site-header">
+    <div class="title-wrap">
+      <h1>CloudMart Admin Dashboard</h1>
+      <p class="muted">Admin-only metrics and database overview</p>
+    </div>
+    <button class="btn btn-outline" onclick="goHome()">← Back to Marketplace</button>
   </header>
 
-  <main class="page">
-    <div class="card">
-      <div class="card-header">
-        <img src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Logo.png" class="card-logo" alt="CloudMart Logo">
-        <h1>Admin Registration</h1>
-      </div>
-      <p class="sub">Create an administrative account for CloudMart.</p>
-      
-      <label>Hampton Email</label>
-      <input id="email" type="email" placeholder="name@my.hamptonu.edu">
-      
-      <label>Username</label>
-      <input id="username" type="text" placeholder="Admin username">
-      
-      <label>Password</label>
-      <input id="password" type="password" placeholder="Admin password">
-      
-      <label>Admin Passphrase</label>
-      <input id="passphrase" type="password" placeholder="Enter security code">
-      
-      <button class="btn" onclick="registerAdmin()">Create Admin Account</button>
-      
-      <div id="message" class="msg"></div>
-      <a href="Signin.html" class="back-link">Return to Sign In</a>
-    </div>
-  </main>
+  <section class="metrics-grid">
+    <button class="metric-btn" onclick="goToAllListings()">
+      <h3>Total Listings</h3>
+      <div id="totalListings" class="metric-value">0</div>
+    </button>
+
+    <button class="metric-btn" onclick="goToAllUsers()">
+      <h3>Total Users</h3>
+      <div id="totalUsers" class="metric-value">0</div>
+    </button>
+
+    <button class="metric-btn" onclick="goToSoldListings()">
+      <h3>Total Sold</h3>
+      <div id="totalSold" class="metric-value">0</div>
+    </button>
+
+    <button class="metric-btn" onclick="showTotalValue()">
+      <h3>Total Listing Value</h3>
+      <div id="totalValue" class="metric-value">$0.00</div>
+    </button>
+  </section>
+
+  <section class="panel">
+    <h2>Listings</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>User ID</th>
+          <th>Title</th>
+          <th>Price</th>
+          <th>Category</th>
+          <th>Condition</th>
+          <th>Seller</th>
+          <th>Status</th>
+          <th>Buyer Email</th>
+        </tr>
+      </thead>
+      <tbody id="listingsTable"></tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>Users</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Email</th>
+          <th>Username</th>
+          <th>Role</th>
+          <th>Created At</th>
+        </tr>
+      </thead>
+      <tbody id="usersTable"></tbody>
+    </table>
+  </section>
 
   <script>
-    async function registerAdmin() {
-      const email = document.getElementById("email").value.trim();
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value;
-      const passphrase = document.getElementById("passphrase").value;
-      const msg = document.getElementById("message");
+    const API = "http://localhost:5001";
+    const user = JSON.parse(localStorage.getItem("user") || "null");
 
-      if (!email.toLowerCase().endsWith("@my.hamptonu.edu")) {
-        msg.innerText = "Error: Requires a @my.hamptonu.edu email.";
-        msg.className = "msg error";
-        return;
-      }
-// reuiqred phrase to create an admin password
-      if (passphrase !== "softDev2") {
-        msg.innerText = "Error: Invalid Admin Passphrase.";
-        msg.className = "msg error";
-        return;
-      }
+    if (!user || user.role !== "admin") {
+      alert("Access denied. Admins only.");
+      window.location.href = "Signin.html";
+    }
 
+    function goHome() {
+      window.location.href = "index.html";
+    }
+
+    function goToAllListings() {
+      window.location.href = "admin-listings.html";
+    }
+
+    function goToAllUsers() {
+      window.location.href = "admin-users.html";
+    }
+
+    function goToSoldListings() {
+      window.location.href = "admin-sold.html";
+    }
+
+    function showTotalValue() {
+      alert("This shows the total dollar value of all listings in the database.");
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    async function loadAdminDashboard() {
       try {
-        const res = await fetch("http://localhost:5001/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, username, password, role: "admin" })
-        });
+        const res = await fetch(`${API}/api/admin/dashboard?role=${encodeURIComponent(user.role)}`);
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Registration failed");
-        // successful account creation message
-        msg.innerText = "Admin account created! Redirecting to Sign In...";
-        msg.className = "msg success";
-        setTimeout(() => window.location.href = "Signin.html", 2000);
+
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to load admin dashboard");
+        }
+
+        document.getElementById("totalUsers").innerText = data.summary.total_users;
+        document.getElementById("totalListings").innerText = data.summary.total_listings;
+        document.getElementById("totalSold").innerText = data.summary.total_sold;
+        document.getElementById("totalValue").innerText = `$${Number(data.summary.total_value).toFixed(2)}`;
+
+        const listingsTable = document.getElementById("listingsTable");
+        listingsTable.innerHTML = "";
+
+        data.listings.forEach(l => {
+          listingsTable.innerHTML += `
+            <tr>
+              <td>${l.id}</td>
+              <td>${l.user_id}</td>
+              <td>${escapeHtml(l.title)}</td>
+              <td>$${Number(l.price).toFixed(2)}</td>
+              <td>${escapeHtml(l.category)}</td>
+              <td>${escapeHtml(l.condition)}</td>
+              <td>${escapeHtml(l.seller)}</td>
+              <td>${escapeHtml(l.status)}</td>
+              <td>${escapeHtml(l.buyer_email || "")}</td>
+            </tr>
+          `;
+        });
+
+        const usersTable = document.getElementById("usersTable");
+        usersTable.innerHTML = "";
+
+        data.users.forEach(u => {
+          usersTable.innerHTML += `
+            <tr>
+              <td>${u.id}</td>
+              <td>${escapeHtml(u.email)}</td>
+              <td>${escapeHtml(u.username)}</td>
+              <td>${escapeHtml(u.role)}</td>
+              <td>${escapeHtml(u.created_at)}</td>
+            </tr>
+          `;
+        });
+
       } catch (err) {
-        msg.innerText = err.message;
-        msg.className = "msg error";
+        console.error(err);
+        alert(err.message);
       }
     }
+
+    loadAdminDashboard();
   </script>
 </body>
 </html>

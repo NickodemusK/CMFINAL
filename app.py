@@ -631,8 +631,6 @@ def update_user_profile(user_id):
         if not existing_user:
             return jsonify({"error": "User not found"}), 404
 
-        old_username = existing_user[1]
-
         cur.execute("""
             SELECT id
             FROM users
@@ -1092,6 +1090,96 @@ def remove_from_wishlist(listing_id):
     conn.close()
 
     return jsonify({"success": True}), 200
+
+
+# ========================
+# ADMIN
+# ========================
+@app.route("/api/admin/dashboard", methods=["GET"])
+def get_admin_dashboard():
+    role = request.args.get("role")
+
+    if role != "admin":
+        return jsonify({"error": "Forbidden"}), 403
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("SELECT COUNT(*) FROM users")
+        total_users = cur.fetchone()[0]
+
+        cur.execute("SELECT COUNT(*) FROM listings")
+        total_listings = cur.fetchone()[0]
+
+        cur.execute("SELECT COUNT(*) FROM listings WHERE COALESCE(status, 'active') = 'sold'")
+        total_sold = cur.fetchone()[0]
+
+        cur.execute("SELECT COALESCE(SUM(price), 0) FROM listings")
+        total_value = cur.fetchone()[0]
+
+        cur.execute("""
+            SELECT id, email, username, role, created_at
+            FROM users
+            ORDER BY id ASC
+        """)
+        user_rows = cur.fetchall()
+
+        cur.execute("""
+            SELECT
+                id,
+                user_id,
+                title,
+                price,
+                category,
+                condition,
+                seller,
+                status,
+                buyer_email
+            FROM listings
+            ORDER BY id DESC
+        """)
+        listing_rows = cur.fetchall()
+
+        return jsonify({
+            "summary": {
+                "total_users": total_users,
+                "total_listings": total_listings,
+                "total_sold": total_sold,
+                "total_value": float(total_value) if total_value is not None else 0
+            },
+            "users": [
+                {
+                    "id": r[0],
+                    "email": r[1],
+                    "username": r[2],
+                    "role": r[3],
+                    "created_at": str(r[4])
+                }
+                for r in user_rows
+            ],
+            "listings": [
+                {
+                    "id": r[0],
+                    "user_id": r[1],
+                    "title": r[2],
+                    "price": float(r[3]) if r[3] is not None else 0,
+                    "category": r[4],
+                    "condition": r[5],
+                    "seller": r[6],
+                    "status": r[7],
+                    "buyer_email": r[8]
+                }
+                for r in listing_rows
+            ]
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
 
 
 if __name__ == "__main__":

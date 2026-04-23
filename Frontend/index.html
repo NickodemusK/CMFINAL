@@ -189,6 +189,7 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
     <button class="btn btn-primary" onclick="goToCreatePage()">+ Sell Item</button>
     <button class="btn btn-outline" onclick="goToWishlist()">❤️ Wishlist</button>
     <button class="btn btn-secondary" onclick="goToCartPage()">🛒 Cart (<span id="cartCount">0</span>)</button>
+    <button id="adminBtn" class="btn btn-outline" onclick="goToAdmin()">📊 Admin</button>
     <button id="userDisplay" class="btn btn-outline" onclick="goToMyListings()"></button>
     <button class="btn btn-outline" onclick="logout()">Sign Out</button>
   </div>
@@ -239,6 +240,12 @@ if (user) {
   window.location.href = "Signin.html";
 }
 
+// Hide admin button if user is not admin
+if (!user || user.role !== "admin") {
+  const adminBtn = document.getElementById("adminBtn");
+  if (adminBtn) adminBtn.style.display = "none";
+}
+
 function logout() {
   localStorage.clear();
   window.location.href = "Signin.html";
@@ -255,6 +262,7 @@ function updateCartCount() {
 function goToCreatePage() { window.location.href = "create.html"; }
 function goToCartPage() { window.location.href = "cart.html"; }
 function goToWishlist() { window.location.href = "wishlist.html"; }
+function goToAdmin() { window.location.href = "admin.html"; }
 
 function goToSellerListings(sellerName) {
   window.location.href = `profile.html?seller=${encodeURIComponent(sellerName)}`;
@@ -292,6 +300,7 @@ async function loadListings() {
     document.getElementById("listings").innerHTML = "<p class='muted'>Unable to load listings right now.</p>";
   }
 }
+
 async function loadWishlist() {
   if (!user || user.id == null) return;
   try {
