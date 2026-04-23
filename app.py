@@ -92,7 +92,6 @@ def init_db():
     )
     """)
 
-    # Make sure older DBs also get these columns
     cur.execute("""
     ALTER TABLE listings
     ADD COLUMN IF NOT EXISTS seller VARCHAR(100)
@@ -417,41 +416,41 @@ def update_listing(listing_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT user_id FROM listings WHERE id = %s", (listing_id,))
-    row = cur.fetchone()
+    try:
+        cur.execute("SELECT user_id, COALESCE(status, 'active') FROM listings WHERE id = %s", (listing_id,))
+        row = cur.fetchone()
 
-    if not row:
+        if not row:
+            return jsonify({"error": "Listing not found"}), 404
+
+        if user_role != "admin" and int(row[0]) != int(user_id):
+            return jsonify({"error": "Forbidden"}), 403
+
+        cur.execute("""
+            UPDATE listings
+            SET title = %s,
+                price = %s,
+                category = %s,
+                condition = %s,
+                image = %s
+            WHERE id = %s
+        """, (
+            data["title"],
+            data["price"],
+            data["category"],
+            data["condition"],
+            data["image"],
+            listing_id
+        ))
+
+        conn.commit()
+        return jsonify({"success": True}), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
         cur.close()
         conn.close()
-        return jsonify({"error": "Listing not found"}), 404
-
-    if user_role != "admin" and int(row[0]) != int(user_id):
-        cur.close()
-        conn.close()
-        return jsonify({"error": "Forbidden"}), 403
-
-    cur.execute("""
-        UPDATE listings
-        SET title = %s,
-            price = %s,
-            category = %s,
-            condition = %s,
-            image = %s
-        WHERE id = %s
-    """, (
-        data["title"],
-        data["price"],
-        data["category"],
-        data["condition"],
-        data["image"],
-        listing_id
-    ))
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({"success": True}), 200
 
 
 # Mark listing as sold + store buyer email
@@ -478,8 +477,13 @@ def mark_listing_sold(listing_id):
         if user_role != "admin" and int(row[0]) != int(user_id):
             return jsonify({"error": "Forbidden"}), 403
 
-        if row[1].lower() == "sold":
+        current_status = (row[1] or "active").lower()
+
+        if current_status == "sold":
             return jsonify({"error": "Listing is already sold"}), 400
+
+        if current_status == "deleted":
+            return jsonify({"error": "Deleted listings cannot be marked as sold"}), 400
 
         cur.execute("SELECT id, email FROM users WHERE LOWER(email) = LOWER(%s)", (buyer_email,))
         buyer_row = cur.fetchone()
@@ -509,7 +513,7 @@ def mark_listing_sold(listing_id):
         conn.close()
 
 
-# Optional: mark sold listing back to active
+# Move sold listing back to active, but not deleted listings
 @app.route("/api/listings/<int:listing_id>/mark-active", methods=["PUT"])
 def mark_listing_active(listing_id):
     data = request.get_json()
@@ -519,61 +523,82 @@ def mark_listing_active(listing_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT user_id FROM listings WHERE id = %s", (listing_id,))
-    row = cur.fetchone()
+    try:
+        cur.execute("SELECT user_id, COALESCE(status, 'active') FROM listings WHERE id = %s", (listing_id,))
+        row = cur.fetchone()
 
-    if not row:
+        if not row:
+            return jsonify({"error": "Listing not found"}), 404
+
+        if user_role != "admin" and int(row[0]) != int(user_id):
+            return jsonify({"error": "Forbidden"}), 403
+
+        current_status = (row[1] or "active").lower()
+
+        if current_status == "deleted":
+            return jsonify({"error": "Deleted listings cannot be moved directly back to active"}), 400
+
+        cur.execute("""
+            UPDATE listings
+            SET status = 'active',
+                buyer_email = NULL
+            WHERE id = %s
+        """, (listing_id,))
+
+        conn.commit()
+        return jsonify({"success": True, "message": "Listing moved back to active"}), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
         cur.close()
         conn.close()
-        return jsonify({"error": "Listing not found"}), 404
-
-    if user_role != "admin" and int(row[0]) != int(user_id):
-        cur.close()
-        conn.close()
-        return jsonify({"error": "Forbidden"}), 403
-
-    cur.execute("""
-        UPDATE listings
-        SET status = 'active',
-            buyer_email = NULL
-        WHERE id = %s
-    """, (listing_id,))
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({"success": True, "message": "Listing moved back to active"}), 200
 
 
+# SOFT DELETE
 @app.route("/api/listings/<int:listing_id>", methods=["DELETE"])
 def delete_listing(listing_id):
-    data = request.get_json()
+    data = request.get_json() or {}
     user_id = data.get("user_id")
     user_role = data.get("role")
 
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT user_id FROM listings WHERE id = %s", (listing_id,))
-    row = cur.fetchone()
+    try:
+        cur.execute("SELECT user_id, COALESCE(status, 'active') FROM listings WHERE id = %s", (listing_id,))
+        row = cur.fetchone()
 
-    if not row:
+        if not row:
+            return jsonify({"error": "Listing not found"}), 404
+
+        if user_role != "admin" and int(row[0]) != int(user_id):
+            return jsonify({"error": "Forbidden"}), 403
+
+        current_status = (row[1] or "active").lower()
+
+        if current_status == "deleted":
+            return jsonify({"success": True, "message": "Listing is already deleted"}), 200
+
+        cur.execute("""
+            UPDATE listings
+            SET status = 'deleted',
+                buyer_email = NULL
+            WHERE id = %s
+        """, (listing_id,))
+
+        conn.commit()
+        return jsonify({"success": True, "message": "Listing soft deleted"}), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
         cur.close()
         conn.close()
-        return jsonify({"error": "Listing not found"}), 404
-
-    if user_role != "admin" and int(row[0]) != int(user_id):
-        cur.close()
-        conn.close()
-        return jsonify({"error": "Forbidden"}), 403
-
-    cur.execute("DELETE FROM listings WHERE id = %s", (listing_id,))
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({"success": True}), 200
 
 
 # ========================
@@ -675,7 +700,7 @@ def update_user_profile(user_id):
         conn.close()
 
 
-# Seller page should show BOTH active and sold
+# Seller page shows active, sold, and deleted
 @app.route("/api/listings/by-seller/<username>", methods=["GET"])
 def get_listings_by_seller(username):
     conn = get_db_connection()
@@ -717,7 +742,7 @@ def get_listings_by_seller(username):
     } for r in rows]), 200
 
 
-# Bought items for the logged-in buyer, including return status if one exists
+# Bought items for the logged-in buyer
 @app.route("/api/listings/bought/<path:buyer_email>", methods=["GET"])
 def get_bought_items(buyer_email):
     conn = get_db_connection()
