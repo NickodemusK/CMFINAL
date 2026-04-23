@@ -578,8 +578,9 @@ function updateNavVisibility() {
   const ownProfile = isViewingOwnProfile();
 
   if (ownProfile) {
-    boughtNavBtn.style.display = "inline-flex";
-    returnsNavBtn.style.display = "inline-flex";
+    // Hidden the bought and returns buttons by setting display to none
+    boughtNavBtn.style.display = "none"; 
+    returnsNavBtn.style.display = "none";
     editProfileBtn.style.display = "inline-flex";
   } else {
     boughtNavBtn.style.display = "none";
@@ -765,29 +766,22 @@ function renderListingCard(item, options = {}) {
   let actionButtons = "";
   let extraInfo = "";
 
+  // Modified: Removed the 'Mark as Sold' button logic
   if (!isBoughtItem && isOwnProfile && status === "active") {
     actionButtons = `
       <div class="btn-row">
         <button class="btn btn-outline" onclick="editListing(${Number(item.id)})">Edit</button>
-        <button class="btn btn-success" onclick="markAsSold(${Number(item.id)})">Mark as Sold</button>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-secondary" onclick="deleteListing(${Number(item.id)})">Delete</button>
+        <button class="btn btn-secondary" onclick="markAsSold(${Number(item.id)})">Mark as Sold</button>
       </div>
     `;
   }
 
-  if (!isBoughtItem && isOwnProfile && status === "deleted") {
-    extraInfo += `<div class="note-box"><p class="meta">This listing is deleted and hidden from the marketplace. Create a new listing if you want to post it again.</p></div>`;
-  }
+  
 
   if (isBoughtItem) {
     if (!returnStatus) {
-      actionButtons = `
-        <div class="btn-row">
-          <button class="btn btn-warning" onclick="requestReturn(${Number(item.id)})">Request Return</button>
-        </div>
-      `;
+      // Modified: Removed the 'Request Return' button logic
+      actionButtons = ""; 
     } else {
       extraInfo += `<span class="badge ${escapeHtml(returnStatus)}">Return ${escapeHtml(returnStatus.charAt(0).toUpperCase() + returnStatus.slice(1))}</span>`;
       if (safeReturnReason) {

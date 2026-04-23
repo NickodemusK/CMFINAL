@@ -186,13 +186,14 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
   </a>
 
   <div class="nav-menu">
-    <button class="btn btn-primary" onclick="goToCreatePage()">+ Sell Item</button>
-    <button class="btn btn-outline" onclick="goToWishlist()">❤️ Wishlist</button>
-    <button class="btn btn-secondary" onclick="goToCartPage()">🛒 Cart (<span id="cartCount">0</span>)</button>
-    <button id="adminBtn" class="btn btn-outline" onclick="goToAdmin()">📊 Admin</button>
-    <button id="userDisplay" class="btn btn-outline" onclick="goToMyListings()"></button>
-    <button class="btn btn-outline" onclick="logout()">Sign Out</button>
-  </div>
+  <button class="btn btn-primary" style="display: none;" onclick="goToCreatePage()">+ Sell Item</button>
+  <button class="btn btn-outline" style="display: none;" onclick="goToWishlist()">❤️ Wishlist</button>
+  <button class="btn btn-secondary" style="display: none;" onclick="goToCartPage()">🛒 Cart (<span id="cartCount">0</span>)</button>
+  
+  <button id="adminBtn" class="btn btn-outline" onclick="goToAdmin()">📊 Admin</button>
+  <button id="userDisplay" class="btn btn-outline" onclick="goToMyListings()"></button>
+  <button class="btn btn-outline" onclick="logout()">Sign Out</button>
+</div>
 </header>
 
 <main class="fb-layout">
@@ -316,7 +317,7 @@ async function loadWishlist() {
 function renderListings(data) {
   const container = document.getElementById("listings");
   container.innerHTML = "";
-
+    
   if (!data || data.length === 0) {
     container.innerHTML = "<p class='muted'>No listings found.</p>";
     return;
@@ -341,41 +342,28 @@ function renderListings(data) {
       : `<span>Unknown</span>`;
 
     container.innerHTML += `
-      <article class="feature-card">
-        <img src="${safeImage}" class="product-img" alt="${safeTitle}">
-        <div class="card-body">
-          <div class="card-header-row">
-            <p class="price">$${displayPrice.toFixed(2)}</p>
-            ${
-              user && user.id != null ? `
-                <button
-                  class="heart-btn ${isSaved ? 'saved' : ''}"
-                  onclick="toggleWishlist(${Number(item.id)}, ${isSaved})"
-                  title="${isSaved ? 'Remove from wishlist' : 'Add to wishlist'}"
-                >
-                  ${isSaved ? '❤️' : '🤍'}
-                </button>
-              ` : ""
-            }
-          </div>
-
-          <h3>${safeTitle}</h3>
-          <p class="condition">${safeCategory} • ${safeCondition}</p>
-          <p class="muted">Seller: ${sellerMarkup}</p>
-
-          <button onclick="addToCart(${Number(item.id)})" class="btn btn-primary full">Add to Cart</button>
-
-          ${
-            hasPermission ? `
-              <div style="display: flex; gap: 5px; margin-top: 5px;">
-                <button onclick="editListing(${Number(item.id)})" class="btn btn-outline full" style="flex:1;">Edit</button>
-                <button onclick="deleteListing(${Number(item.id)})" class="btn btn-secondary full" style="flex:1;">Delete</button>
-              </div>
-            ` : ""
-          }
+  <article class="feature-card">
+    <img src="${safeImage}" class="product-img" alt="${safeTitle}">
+    <div class="card-body">
+      <div class="card-header-row">
+        <p class="price">$${displayPrice.toFixed(2)}</p>
         </div>
-      </article>
-    `;
+
+      <h3>${safeTitle}</h3>
+      <p class="condition">${safeCategory} • ${safeCondition}</p>
+      <p class="muted">Seller: ${sellerMarkup}</p>
+
+      ${
+        hasPermission ? `
+          <div style="display: flex; gap: 5px; margin-top: 5px;">
+            <button onclick="editListing(${Number(item.id)})" class="btn btn-outline full" style="flex:1;">Edit</button>
+            <button onclick="deleteListing(${Number(item.id)})" class="btn btn-secondary full" style="flex:1;">Delete</button>
+          </div>
+        ` : ""
+      }
+    </div>
+  </article>
+`;
   });
 }
 
