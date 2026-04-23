@@ -566,6 +566,49 @@ def get_listings_by_seller(username):
     } for r in rows]), 200
 
 
+# Bought items by buyer email
+@app.route("/api/listings/bought/<path:buyer_email>", methods=["GET"])
+def get_bought_items(buyer_email):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            l.id,
+            l.user_id,
+            l.title,
+            l.price,
+            l.category,
+            l.condition,
+            l.image,
+            COALESCE(NULLIF(l.seller, ''), u.username) AS seller,
+            COALESCE(l.status, 'active') AS status,
+            l.buyer_email
+        FROM listings l
+        LEFT JOIN users u ON l.user_id = u.id
+        WHERE LOWER(COALESCE(l.buyer_email, '')) = LOWER(%s)
+          AND COALESCE(l.status, 'active') = 'sold'
+        ORDER BY l.id DESC
+    """, (buyer_email,))
+
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return jsonify([{
+        "id": r[0],
+        "user_id": r[1],
+        "title": r[2],
+        "price": float(r[3]) if r[3] is not None else 0,
+        "category": r[4],
+        "condition": r[5],
+        "image": r[6],
+        "seller": r[7],
+        "status": r[8],
+        "buyer_email": r[9]
+    } for r in rows]), 200
+
+
 # ========================
 # WISHLIST
 # ========================
@@ -588,6 +631,7 @@ def get_wishlist():
         JOIN listings l ON w.listing_id = l.id
         LEFT JOIN users u ON l.user_id = u.id
         WHERE w.user_id = %s
+          AND COALESCE(l.status, 'active') = 'active'
         ORDER BY w.id DESC
     """, (user_id,))
 
@@ -621,8 +665,19 @@ def add_to_wishlist():
     try:
         cur.execute("""
             INSERT INTO wishlist (user_id, listing_id)
-            VALUES (%s, %s)
-        """, (user_id, listing_id))
+            SELECT %s, %s
+            WHERE EXISTS (
+                SELECT 1
+                FROM listings
+                WHERE id = %s
+                  AND COALESCE(status, 'active') = 'active'
+            )
+        """, (user_id, listing_id, listing_id))
+
+        if cur.rowcount == 0:
+            conn.rollback()
+            return jsonify({"error": "Only active listings can be added to wishlist"}), 400
+
         conn.commit()
         return jsonify({"success": True}), 201
     except Exception as e:

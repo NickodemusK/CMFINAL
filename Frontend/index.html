@@ -372,7 +372,13 @@ function renderListings(data) {
 
 function addToCart(id) {
   const item = allListings.find(i => Number(i.id) === Number(id));
+
   if (!item) return;
+
+  if (item.status !== "active") {
+    return alert("This item has already been sold.");
+  }
+
   cart.push(item);
   localStorage.setItem("cart", JSON.stringify(cart));
   updateCartCount();

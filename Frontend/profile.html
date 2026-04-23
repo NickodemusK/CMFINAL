@@ -207,6 +207,12 @@ body {
   <h2 class="section-title">Sold Listings</h2>
   <div id="soldListings" class="grid"></div>
   <p id="soldEmpty" class="empty" style="display:none;">No sold listings found.</p>
+
+  <section id="boughtSection" style="display:none;">
+    <h2 class="section-title">Bought Items</h2>
+    <div id="boughtListings" class="grid"></div>
+    <p id="boughtEmpty" class="empty" style="display:none;">No purchased items found.</p>
+  </section>
 </main>
 
 <script>
@@ -220,8 +226,11 @@ const profileName = document.getElementById("profileName");
 const profileSub = document.getElementById("profileSub");
 const activeListingsEl = document.getElementById("activeListings");
 const soldListingsEl = document.getElementById("soldListings");
+const boughtListingsEl = document.getElementById("boughtListings");
 const activeEmpty = document.getElementById("activeEmpty");
 const soldEmpty = document.getElementById("soldEmpty");
+const boughtEmpty = document.getElementById("boughtEmpty");
+const boughtSection = document.getElementById("boughtSection");
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -237,7 +246,7 @@ function isViewingOwnProfile() {
   return loggedInUser.username.toLowerCase() === seller.toLowerCase();
 }
 
-function renderCard(item, isOwnProfile) {
+function renderCard(item, isOwnProfile, isBoughtItem = false) {
   const safeTitle = escapeHtml(item.title);
   const safeCategory = escapeHtml(item.category);
   const safeCondition = escapeHtml(item.condition);
@@ -248,7 +257,7 @@ function renderCard(item, isOwnProfile) {
 
   let actionButtons = "";
 
-  if (isOwnProfile && status === "active") {
+  if (!isBoughtItem && isOwnProfile && status === "active") {
     actionButtons = `
       <div class="btn-row">
         <button class="btn btn-secondary" onclick="markAsSold(${Number(item.id)})">Mark as Sold</button>
@@ -256,7 +265,7 @@ function renderCard(item, isOwnProfile) {
     `;
   }
 
-  if (isOwnProfile && status === "sold") {
+  if (!isBoughtItem && isOwnProfile && status === "sold") {
     actionButtons = `
       <div class="btn-row">
         <button class="btn btn-outline" onclick="markAsActive(${Number(item.id)})">Mark Active Again</button>
@@ -279,6 +288,35 @@ function renderCard(item, isOwnProfile) {
   `;
 }
 
+async function loadBoughtItems() {
+  if (!loggedInUser || !loggedInUser.email) {
+    boughtSection.style.display = "none";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/api/listings/bought/${encodeURIComponent(loggedInUser.email)}`);
+    const boughtItems = await res.json();
+
+    if (isViewingOwnProfile()) {
+      boughtSection.style.display = "block";
+      boughtListingsEl.innerHTML = Array.isArray(boughtItems)
+        ? boughtItems.map(item => renderCard(item, false, true)).join("")
+        : "";
+      boughtEmpty.style.display = Array.isArray(boughtItems) && boughtItems.length ? "none" : "block";
+    } else {
+      boughtSection.style.display = "none";
+    }
+  } catch (err) {
+    console.error("Error loading bought items:", err);
+    if (isViewingOwnProfile()) {
+      boughtSection.style.display = "block";
+      boughtListingsEl.innerHTML = "";
+      boughtEmpty.style.display = "block";
+    }
+  }
+}
+
 async function loadProfile() {
   if (!seller) {
     profileName.innerText = "User Not Found";
@@ -292,7 +330,7 @@ async function loadProfile() {
       const userData = await userRes.json();
       profileName.innerText = userData.username;
       profileSub.innerText = isViewingOwnProfile()
-        ? "These are your active and sold listings."
+        ? "These are your active, sold, and bought items."
         : `Viewing ${userData.username}'s active and sold listings.`;
     } else {
       profileName.innerText = "User Not Found";
@@ -315,6 +353,8 @@ async function loadProfile() {
 
     activeEmpty.style.display = activeListings.length ? "none" : "block";
     soldEmpty.style.display = soldListings.length ? "none" : "block";
+
+    await loadBoughtItems();
   } catch (err) {
     console.error(err);
     profileName.innerText = "Error Loading Profile";

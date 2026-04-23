@@ -163,60 +163,57 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
 <script>
 const API = "http://localhost:5001";
 
-// User display
-const currentUser = localStorage.getItem("currentUser");
-const userId = localStorage.getItem("userId");
+const user = JSON.parse(localStorage.getItem("user") || "null");
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-if (currentUser) {
-  document.getElementById("userDisplay").innerText = "Hi, " + currentUser;
-}
-
-// Check if logged in
-if (!userId) {
+if (user) {
+  const userDisplay = document.getElementById("userDisplay");
+  if (userDisplay) {
+    userDisplay.innerText = "Hi, " + (user.username || "User");
+  }
+} else {
   alert("Please sign in to view your wishlist!");
-  window.location.href = "/";
+  window.location.href = "Signin.html";
 }
 
 function signOut() {
-  localStorage.removeItem("isLoggedIn");
-  localStorage.removeItem("currentUser");
-  localStorage.removeItem("userId");
-  window.location.href = "/";
+  localStorage.clear();
+  window.location.href = "Signin.html";
 }
 
-// Load wishlist
 async function loadWishlist() {
   try {
-    const res = await fetch(API + "/api/wishlist?user_id=" + userId);
+    const res = await fetch(`${API}/api/wishlist?user_id=${user.id}`);
     const data = await res.json();
-    renderWishlist(data);
-  } catch(err) {
+    renderWishlist(Array.isArray(data) ? data : []);
+  } catch (err) {
     console.error("Error loading wishlist:", err);
   }
 }
 
-// Render wishlist
 function renderWishlist(data) {
   const container = document.getElementById("wishlistContainer");
   const emptyState = document.getElementById("emptyState");
-  
+
   container.innerHTML = "";
-  
-  if (data.length === 0) {
+
+  if (!data || data.length === 0) {
     container.style.display = "none";
     emptyState.style.display = "block";
     return;
   }
-  
+
   container.style.display = "grid";
   emptyState.style.display = "none";
-  
-  data.forEach(item => {
+
+  data
+  .filter(item => item.status === "active")
+  .forEach(item => {
     container.innerHTML += `
       <article class="wishlist-card">
         <img src="${item.image}" class="product-img" alt="${item.title}">
         <div class="card-body">
-          <p class="price">$${item.price}</p>
+          <p class="price">$${Number(item.price).toFixed(2)}</p>
           <h3 class="card-title">${item.title}</h3>
           <p class="condition">${item.category} • ${item.condition}</p>
           <p class="seller">Sold by: ${item.seller || 'Unknown'}</p>
@@ -230,36 +227,33 @@ function renderWishlist(data) {
   });
 }
 
-// Remove from wishlist
 async function removeFromWishlist(listingId) {
   try {
-    await fetch(API + "/api/wishlist/" + listingId + "?user_id=" + userId, { method: "DELETE" });
-    loadWishlist(); // Refresh the list
-  } catch(err) {
+    await fetch(`${API}/api/wishlist/${listingId}?user_id=${user.id}`, {
+      method: "DELETE"
+    });
+    loadWishlist();
+  } catch (err) {
     console.error("Error removing from wishlist:", err);
   }
 }
 
-// Add to cart
-let cart = JSON.parse(localStorage.getItem("cart")) || [];
-
 async function addToCart(listingId) {
   try {
-    const res = await fetch(API + "/api/wishlist?user_id=" + userId);
+    const res = await fetch(`${API}/api/wishlist?user_id=${user.id}`);
     const data = await res.json();
-    const item = data.find(i => i.id === listingId);
-    
+    const item = data.find(i => Number(i.id) === Number(listingId));
+
     if (item) {
       cart.push(item);
       localStorage.setItem("cart", JSON.stringify(cart));
       alert("Added to cart!");
     }
-  } catch(err) {
+  } catch (err) {
     console.error("Error adding to cart:", err);
   }
 }
 
-// Initialize
 loadWishlist();
 </script>
 </body>
