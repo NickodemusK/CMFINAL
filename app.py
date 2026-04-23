@@ -1,5 +1,5 @@
 # Collaboration from Howard Ames, Nickodemus, and Gemini
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from sshtunnel import SSHTunnelForwarder
 import psycopg
@@ -67,8 +67,14 @@ def init_db():
         username VARCHAR(50) UNIQUE,
         password_hash TEXT,
         role VARCHAR(20) DEFAULT 'user',
+        profile_image TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
+    """)
+
+    cur.execute("""
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS profile_image TEXT
     """)
 
     cur.execute("""
@@ -175,7 +181,7 @@ def login():
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT id, username, password_hash, email, role FROM users WHERE username = %s",
+        "SELECT id, username, password_hash, email, role, profile_image FROM users WHERE username = %s",
         (data["username"],)
     )
     user = cur.fetchone()
@@ -191,7 +197,8 @@ def login():
             "id": user[0],
             "username": user[1],
             "email": user[3],
-            "role": user[4]
+            "role": user[4],
+            "profile_image": user[5]
         }
     }), 200
 
@@ -214,6 +221,43 @@ def generate_presigned_upload_url():
     try:
         ext = os.path.splitext(file_name)[1] or ""
         unique_name = f"listings/{uuid.uuid4()}{ext}"
+
+        upload_url = s3.generate_presigned_url(
+            "put_object",
+            Params={
+                "Bucket": BUCKET_NAME,
+                "Key": unique_name,
+                "ContentType": file_type
+            },
+            ExpiresIn=300
+        )
+
+        image_url = f"https://{BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{unique_name}"
+
+        return jsonify({
+            "uploadUrl": upload_url,
+            "imageUrl": image_url
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/uploads/profile-presign", methods=["POST", "OPTIONS"])
+def generate_profile_presigned_upload_url():
+    if request.method == "OPTIONS":
+        return jsonify({"ok": True}), 200
+
+    data = request.get_json() or {}
+    file_name = data.get("fileName")
+    file_type = data.get("fileType")
+
+    if not file_name or not file_type:
+        return jsonify({"error": "fileName and fileType are required"}), 400
+
+    try:
+        ext = os.path.splitext(file_name)[1] or ""
+        unique_name = f"profiles/{uuid.uuid4()}{ext}"
 
         upload_url = s3.generate_presigned_url(
             "put_object",
@@ -541,7 +585,7 @@ def get_user_by_username(username):
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT id, email, username, role, created_at
+        SELECT id, email, username, role, profile_image, created_at
         FROM users
         WHERE LOWER(username) = LOWER(%s)
     """, (username,))
@@ -558,8 +602,79 @@ def get_user_by_username(username):
         "email": row[1],
         "username": row[2],
         "role": row[3],
-        "created_at": str(row[4])
+        "profile_image": row[4],
+        "created_at": str(row[5])
     }), 200
+
+
+@app.route("/api/users/<int:user_id>/profile", methods=["PUT"])
+def update_user_profile(user_id):
+    data = request.get_json() or {}
+    requester_id = data.get("user_id")
+    requester_role = data.get("role")
+    new_username = (data.get("username") or "").strip()
+    profile_image = (data.get("profile_image") or "").strip()
+
+    if requester_role != "admin" and int(requester_id) != int(user_id):
+        return jsonify({"error": "Forbidden"}), 403
+
+    if not new_username:
+        return jsonify({"error": "Username is required"}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("SELECT id, username FROM users WHERE id = %s", (user_id,))
+        existing_user = cur.fetchone()
+
+        if not existing_user:
+            return jsonify({"error": "User not found"}), 404
+
+        old_username = existing_user[1]
+
+        cur.execute("""
+            SELECT id
+            FROM users
+            WHERE LOWER(username) = LOWER(%s)
+              AND id <> %s
+        """, (new_username, user_id))
+        username_taken = cur.fetchone()
+
+        if username_taken:
+            return jsonify({"error": "Username is already taken"}), 400
+
+        cur.execute("""
+            UPDATE users
+            SET username = %s,
+                profile_image = %s
+            WHERE id = %s
+        """, (new_username, profile_image or None, user_id))
+
+        cur.execute("""
+            UPDATE listings
+            SET seller = %s
+            WHERE user_id = %s
+        """, (new_username, user_id))
+
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "user": {
+                "id": user_id,
+                "username": new_username,
+                "profile_image": profile_image or None
+            }
+        }), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
 
 
 # Seller page should show BOTH active and sold

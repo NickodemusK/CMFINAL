@@ -65,15 +65,120 @@ body {
   margin-bottom: 20px;
 }
 
-.hero h1 {
+.hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.hero-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.profile-avatar {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(255,255,255,0.15);
+  background: #111827;
+}
+
+.profile-avatar-fallback {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: #111827;
+  border: 3px solid rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #93c5fd;
+}
+
+.hero-text h1 {
   font-size: 2rem;
   color: #3b82f6;
   margin-bottom: 10px;
 }
 
-.hero p {
+.hero-text p {
   color: #d1d5db;
   font-size: 1rem;
+}
+
+.edit-profile-panel {
+  margin-top: 18px;
+  display: none;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  color: #dbeafe;
+  font-weight: 600;
+}
+
+.form-group input {
+  background: #0f172a;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.form-group input[type="file"] {
+  padding: 8px;
+}
+
+.preview-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.preview-image {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,0.15);
+  background: #111827;
+}
+
+.preview-fallback {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: #111827;
+  border: 2px solid rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #93c5fd;
 }
 
 .section-nav {
@@ -242,12 +347,18 @@ body {
   color: #dbeafe;
 }
 
+.helper-text {
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
 @media (max-width: 1100px) {
   .grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 850px) {
   .grid { grid-template-columns: repeat(2, 1fr); }
+  .edit-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 560px) {
@@ -271,8 +382,43 @@ body {
 
 <main class="page">
   <section class="hero">
-    <h1 id="profileName">Loading...</h1>
-    <p id="profileSub">Viewing this seller's listings.</p>
+    <div class="hero-top">
+      <div class="hero-left">
+        <div id="profileAvatarWrap"></div>
+        <div class="hero-text">
+          <h1 id="profileName">Loading...</h1>
+          <p id="profileSub">Viewing this seller's listings.</p>
+        </div>
+      </div>
+
+      <button id="editProfileBtn" class="btn btn-outline" style="display:none;" type="button" onclick="toggleEditProfile()">
+        Edit Profile
+      </button>
+    </div>
+
+    <div id="editProfilePanel" class="edit-profile-panel">
+      <div class="edit-grid">
+        <div class="form-group">
+          <label for="editUsername">Username</label>
+          <input id="editUsername" type="text" maxlength="50" placeholder="Enter new username" />
+        </div>
+
+        <div class="form-group">
+          <label for="editProfileImage">Profile Picture</label>
+          <input id="editProfileImage" type="file" accept="image/*" />
+        </div>
+      </div>
+
+      <div class="preview-wrap">
+        <div id="previewWrap"></div>
+        <span class="helper-text">Preview of your profile picture.</span>
+      </div>
+
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn btn-primary" type="button" onclick="saveProfileChanges()">Save Changes</button>
+        <button class="btn btn-outline" type="button" onclick="toggleEditProfile(false)">Cancel</button>
+      </div>
+    </div>
   </section>
 
   <nav class="section-nav" id="sectionNav">
@@ -319,13 +465,24 @@ body {
 
 <script>
 const API = "http://localhost:5001";
+const DEFAULT_AVATAR = "https://ui-avatars.com/api/?background=0f172a&color=93c5fd&name=";
+
 const params = new URLSearchParams(window.location.search);
 const seller = params.get("seller");
 
-const loggedInUser = JSON.parse(localStorage.getItem("user") || "null");
+let loggedInUser = JSON.parse(localStorage.getItem("user") || "null");
+let currentProfileData = null;
+let pendingProfileImageUrl = "";
 
 const profileName = document.getElementById("profileName");
 const profileSub = document.getElementById("profileSub");
+const profileAvatarWrap = document.getElementById("profileAvatarWrap");
+const editProfileBtn = document.getElementById("editProfileBtn");
+const editProfilePanel = document.getElementById("editProfilePanel");
+const editUsername = document.getElementById("editUsername");
+const editProfileImage = document.getElementById("editProfileImage");
+const previewWrap = document.getElementById("previewWrap");
+
 const activeListingsEl = document.getElementById("activeListings");
 const soldListingsEl = document.getElementById("soldListings");
 const boughtListingsEl = document.getElementById("boughtListings");
@@ -368,16 +525,187 @@ function formatDate(value) {
   return date.toLocaleString();
 }
 
+function getAvatarUrl(name, profileImage) {
+  if (profileImage) return profileImage;
+  return DEFAULT_AVATAR + encodeURIComponent(name || "User");
+}
+
+function renderAvatar(name, profileImage, size = "large") {
+  const avatarUrl = profileImage;
+  const safeName = escapeHtml(name || "User");
+  const firstLetter = safeName ? safeName.charAt(0).toUpperCase() : "U";
+
+  if (avatarUrl) {
+    if (size === "small") {
+      return `<img src="${escapeHtml(avatarUrl)}" alt="${safeName}" class="preview-image">`;
+    }
+    return `<img src="${escapeHtml(avatarUrl)}" alt="${safeName}" class="profile-avatar">`;
+  }
+
+  if (size === "small") {
+    return `<div class="preview-fallback">${firstLetter}</div>`;
+  }
+  return `<div class="profile-avatar-fallback">${firstLetter}</div>`;
+}
+
 function updateNavVisibility() {
   const ownProfile = isViewingOwnProfile();
 
   if (ownProfile) {
     boughtNavBtn.style.display = "inline-flex";
     returnsNavBtn.style.display = "inline-flex";
+    editProfileBtn.style.display = "inline-flex";
   } else {
     boughtNavBtn.style.display = "none";
     returnsNavBtn.style.display = "none";
+    editProfileBtn.style.display = "none";
+    editProfilePanel.style.display = "none";
   }
+}
+
+function toggleEditProfile(forceState = null) {
+  if (!isViewingOwnProfile()) return;
+
+  const shouldOpen = forceState === null
+    ? editProfilePanel.style.display !== "block"
+    : forceState;
+
+  editProfilePanel.style.display = shouldOpen ? "block" : "none";
+
+  if (shouldOpen && currentProfileData) {
+    editUsername.value = currentProfileData.username || "";
+    pendingProfileImageUrl = currentProfileData.profile_image || "";
+    previewWrap.innerHTML = renderAvatar(
+      currentProfileData.username,
+      pendingProfileImageUrl,
+      "small"
+    );
+  }
+
+  if (!shouldOpen) {
+    editProfileImage.value = "";
+  }
+}
+
+function renderProfileHeader(userData) {
+  currentProfileData = userData;
+  profileName.innerText = userData.username;
+  profileAvatarWrap.innerHTML = renderAvatar(userData.username, userData.profile_image);
+}
+
+async function uploadProfileImageIfNeeded() {
+  const file = editProfileImage.files && editProfileImage.files[0];
+
+  if (!file) {
+    return pendingProfileImageUrl || (currentProfileData ? currentProfileData.profile_image : "");
+  }
+
+  const presignRes = await fetch(`${API}/api/uploads/profile-presign`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fileName: file.name,
+      fileType: file.type
+    })
+  });
+
+  const presignData = await presignRes.json();
+
+  if (!presignRes.ok) {
+    throw new Error(presignData.error || "Failed to create upload URL.");
+  }
+
+  const uploadRes = await fetch(presignData.uploadUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": file.type
+    },
+    body: file
+  });
+
+  if (!uploadRes.ok) {
+    throw new Error("Failed to upload image to S3.");
+  }
+
+  return presignData.imageUrl;
+}
+
+async function saveProfileChanges() {
+  if (!loggedInUser || !currentProfileData || !isViewingOwnProfile()) {
+    alert("You can only edit your own profile.");
+    return;
+  }
+
+  const newUsername = editUsername.value.trim();
+  if (!newUsername) {
+    alert("Username is required.");
+    return;
+  }
+
+  try {
+    const finalProfileImage = await uploadProfileImageIfNeeded();
+
+    const res = await fetch(`${API}/api/users/${loggedInUser.id}/profile`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: loggedInUser.id,
+        role: loggedInUser.role,
+        username: newUsername,
+        profile_image: finalProfileImage || ""
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Failed to update profile.");
+      return;
+    }
+
+    loggedInUser = {
+      ...loggedInUser,
+      username: newUsername,
+      profile_image: finalProfileImage || null
+    };
+
+    localStorage.setItem("user", JSON.stringify(loggedInUser));
+
+    alert("Profile updated successfully.");
+
+    if (seller && seller.toLowerCase() !== newUsername.toLowerCase()) {
+      window.location.href = `profile.html?seller=${encodeURIComponent(newUsername)}`;
+      return;
+    }
+
+    toggleEditProfile(false);
+    await loadProfile();
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Error updating profile.");
+  }
+}
+
+editProfileImage.addEventListener("change", function () {
+  const file = this.files && this.files[0];
+  if (!file) {
+    previewWrap.innerHTML = renderAvatar(
+      currentProfileData?.username || "User",
+      pendingProfileImageUrl || currentProfileData?.profile_image || "",
+      "small"
+    );
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    previewWrap.innerHTML = `<img src="${escapeHtml(e.target.result)}" alt="Preview" class="preview-image">`;
+  };
+  reader.readAsDataURL(file);
+});
+
+function editListing(listingId) {
+  window.location.href = `create.html?edit=${listingId}`;
 }
 
 function renderListingCard(item, options = {}) {
@@ -403,18 +731,13 @@ function renderListingCard(item, options = {}) {
   if (!isBoughtItem && isOwnProfile && status === "active") {
     actionButtons = `
       <div class="btn-row">
+        <button class="btn btn-outline" onclick="editListing(${Number(item.id)})">Edit</button>
         <button class="btn btn-secondary" onclick="markAsSold(${Number(item.id)})">Mark as Sold</button>
       </div>
     `;
   }
 
-  if (!isBoughtItem && isOwnProfile && status === "sold") {
-    actionButtons = `
-      <div class="btn-row">
-        <button class="btn btn-outline" onclick="markAsActive(${Number(item.id)})">Mark Active Again</button>
-      </div>
-    `;
-  }
+  
 
   if (isBoughtItem) {
     if (!returnStatus) {
@@ -566,11 +889,13 @@ async function loadSellerReturnRequests() {
 }
 
 async function loadProfile() {
+  loggedInUser = JSON.parse(localStorage.getItem("user") || "null");
   updateNavVisibility();
 
   if (!seller) {
     profileName.innerText = "User Not Found";
     profileSub.innerText = "No seller was provided.";
+    profileAvatarWrap.innerHTML = renderAvatar("User", "", "large");
     return;
   }
 
@@ -578,13 +903,21 @@ async function loadProfile() {
     const userRes = await fetch(`${API}/api/users/by-username/${encodeURIComponent(seller)}`);
     if (userRes.ok) {
       const userData = await userRes.json();
-      profileName.innerText = userData.username;
+      renderProfileHeader(userData);
+
       profileSub.innerText = isViewingOwnProfile()
         ? "These are your active listings, sold listings, purchases, and return requests."
         : `Viewing ${userData.username}'s active and sold listings.`;
+
+      if (isViewingOwnProfile()) {
+        editUsername.value = userData.username || "";
+        pendingProfileImageUrl = userData.profile_image || "";
+        previewWrap.innerHTML = renderAvatar(userData.username, userData.profile_image, "small");
+      }
     } else {
       profileName.innerText = "User Not Found";
       profileSub.innerText = "Viewing this seller's listings.";
+      profileAvatarWrap.innerHTML = renderAvatar("User", "", "large");
     }
 
     const listingsRes = await fetch(`${API}/api/listings/by-seller/${encodeURIComponent(seller)}`);
@@ -617,6 +950,7 @@ async function loadProfile() {
     console.error(err);
     profileName.innerText = "Error Loading Profile";
     profileSub.innerText = "Could not load seller information.";
+    profileAvatarWrap.innerHTML = renderAvatar("User", "", "large");
   }
 }
 
