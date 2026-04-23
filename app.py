@@ -322,7 +322,6 @@ def create_listing():
         conn.close()
 
 
-# Homepage only shows ACTIVE listings
 @app.route("/api/listings", methods=["GET"])
 def get_listings():
     conn = get_db_connection()
@@ -453,7 +452,6 @@ def update_listing(listing_id):
         conn.close()
 
 
-# Mark listing as sold + store buyer email
 @app.route("/api/listings/<int:listing_id>/mark-sold", methods=["PUT"])
 def mark_listing_sold(listing_id):
     data = request.get_json()
@@ -513,7 +511,6 @@ def mark_listing_sold(listing_id):
         conn.close()
 
 
-# Move sold listing back to active, but not deleted listings
 @app.route("/api/listings/<int:listing_id>/mark-active", methods=["PUT"])
 def mark_listing_active(listing_id):
     data = request.get_json()
@@ -557,7 +554,6 @@ def mark_listing_active(listing_id):
         conn.close()
 
 
-# SOFT DELETE
 @app.route("/api/listings/<int:listing_id>", methods=["DELETE"])
 def delete_listing(listing_id):
     data = request.get_json() or {}
@@ -700,7 +696,6 @@ def update_user_profile(user_id):
         conn.close()
 
 
-# Seller page shows active, sold, and deleted
 @app.route("/api/listings/by-seller/<username>", methods=["GET"])
 def get_listings_by_seller(username):
     conn = get_db_connection()
@@ -742,7 +737,6 @@ def get_listings_by_seller(username):
     } for r in rows]), 200
 
 
-# Bought items for the logged-in buyer
 @app.route("/api/listings/bought/<path:buyer_email>", methods=["GET"])
 def get_bought_items(buyer_email):
     conn = get_db_connection()
@@ -1166,6 +1160,25 @@ def get_admin_dashboard():
         """)
         listing_rows = cur.fetchall()
 
+        cur.execute("""
+            SELECT
+                rr.id,
+                rr.listing_id,
+                l.title,
+                rr.seller_id,
+                rr.buyer_id,
+                rr.buyer_email,
+                rr.reason,
+                rr.status,
+                rr.seller_note,
+                rr.created_at,
+                rr.reviewed_at
+            FROM return_requests rr
+            LEFT JOIN listings l ON rr.listing_id = l.id
+            ORDER BY rr.created_at DESC
+        """)
+        return_request_rows = cur.fetchall()
+
         return jsonify({
             "summary": {
                 "total_users": total_users,
@@ -1196,6 +1209,22 @@ def get_admin_dashboard():
                     "buyer_email": r[8]
                 }
                 for r in listing_rows
+            ],
+            "return_requests": [
+                {
+                    "id": r[0],
+                    "listing_id": r[1],
+                    "title": r[2],
+                    "seller_id": r[3],
+                    "buyer_id": r[4],
+                    "buyer_email": r[5],
+                    "reason": r[6],
+                    "status": r[7],
+                    "seller_note": r[8],
+                    "created_at": str(r[9]) if r[9] else None,
+                    "reviewed_at": str(r[10]) if r[10] else None
+                }
+                for r in return_request_rows
             ]
         }), 200
 
