@@ -337,6 +337,7 @@ def get_listings():
             l.condition,
             l.image,
             COALESCE(NULLIF(l.seller, ''), u.username) AS seller,
+            u.email AS seller_email,
             COALESCE(l.status, 'active') AS status,
             l.buyer_email
         FROM listings l
@@ -351,15 +352,16 @@ def get_listings():
 
     return jsonify([{
         "id": r[0],
-        "user_id": r[1],
-        "title": r[2],
-        "price": float(r[3]) if r[3] is not None else 0,
-        "category": r[4],
-        "condition": r[5],
-        "image": r[6],
-        "seller": r[7],
-        "status": r[8],
-        "buyer_email": r[9]
+    "user_id": r[1],
+    "title": r[2],
+    "price": float(r[3]) if r[3] is not None else 0,
+    "category": r[4],
+    "condition": r[5],
+    "image": r[6],
+    "seller": r[7],
+    "seller_email": r[8],
+    "status": r[9],
+    "buyer_email": r[10]
     } for r in rows]), 200
 
 
@@ -378,6 +380,7 @@ def get_listing_by_id(listing_id):
             l.condition,
             l.image,
             COALESCE(NULLIF(l.seller, ''), u.username) AS seller,
+            u.email AS seller_email,
             COALESCE(l.status, 'active') AS status,
             l.buyer_email
         FROM listings l
@@ -393,16 +396,17 @@ def get_listing_by_id(listing_id):
         return jsonify({"error": "Listing not found"}), 404
 
     return jsonify({
-        "id": row[0],
-        "user_id": row[1],
-        "title": row[2],
-        "price": float(row[3]) if row[3] is not None else 0,
-        "category": row[4],
-        "condition": row[5],
-        "image": row[6],
-        "seller": row[7],
-        "status": row[8],
-        "buyer_email": row[9]
+        "id": r[0],
+    "user_id": r[1],
+    "title": r[2],
+    "price": float(r[3]) if r[3] is not None else 0,
+    "category": r[4],
+    "condition": r[5],
+    "image": r[6],
+    "seller": r[7],
+    "seller_email": r[8],
+    "status": r[9],
+    "buyer_email": r[10]
     }), 200
 
 
@@ -711,6 +715,7 @@ def get_listings_by_seller(username):
             l.condition,
             l.image,
             COALESCE(NULLIF(l.seller, ''), u.username) AS seller,
+            u.email AS seller_email,
             COALESCE(l.status, 'active') AS status,
             l.buyer_email
         FROM listings l
@@ -725,15 +730,16 @@ def get_listings_by_seller(username):
 
     return jsonify([{
         "id": r[0],
-        "user_id": r[1],
-        "title": r[2],
-        "price": float(r[3]) if r[3] is not None else 0,
-        "category": r[4],
-        "condition": r[5],
-        "image": r[6],
-        "seller": r[7],
-        "status": r[8],
-        "buyer_email": r[9]
+    "user_id": r[1],
+    "title": r[2],
+    "price": float(r[3]) if r[3] is not None else 0,
+    "category": r[4],
+    "condition": r[5],
+    "image": r[6],
+    "seller": r[7],
+    "seller_email": r[8],
+    "status": r[9],
+    "buyer_email": r[10]
     } for r in rows]), 200
 
 
@@ -1028,9 +1034,10 @@ def get_wishlist():
 
     cur.execute("""
         SELECT l.id, l.user_id, l.title, l.price, l.category, l.condition, l.image,
-               COALESCE(NULLIF(l.seller, ''), u.username) AS seller,
-               COALESCE(l.status, 'active') AS status,
-               l.buyer_email
+       COALESCE(NULLIF(l.seller, ''), u.username) AS seller,
+       u.email AS seller_email,
+       COALESCE(l.status, 'active') AS status,
+       l.buyer_email
         FROM wishlist w
         JOIN listings l ON w.listing_id = l.id
         LEFT JOIN users u ON l.user_id = u.id
@@ -1045,15 +1052,16 @@ def get_wishlist():
 
     return jsonify([{
         "id": r[0],
-        "user_id": r[1],
-        "title": r[2],
-        "price": float(r[3]) if r[3] is not None else 0,
-        "category": r[4],
-        "condition": r[5],
-        "image": r[6],
-        "seller": r[7],
-        "status": r[8],
-        "buyer_email": r[9]
+    "user_id": r[1],
+    "title": r[2],
+    "price": float(r[3]) if r[3] is not None else 0,
+    "category": r[4],
+    "condition": r[5],
+    "image": r[6],
+    "seller": r[7],
+    "seller_email": r[8],
+    "status": r[9],
+    "buyer_email": r[10]
     } for r in rows]), 200
 
 
