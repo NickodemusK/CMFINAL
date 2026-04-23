@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # S3 config
-from backend.s3_config import s3, BUCKET_NAME, AWS_REGION
+from s3_config import s3, BUCKET_NAME, AWS_REGION
 
 app = Flask(__name__)
 CORS(app)
