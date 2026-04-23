@@ -114,6 +114,20 @@ body {
   font-size: 1rem;
 }
 
+.profile-email {
+  margin-top: 8px;
+  font-size: 0.98rem;
+}
+
+.profile-email a {
+  color: #60a5fa;
+  text-decoration: none;
+}
+
+.profile-email a:hover {
+  text-decoration: underline;
+}
+
 .edit-profile-panel {
   margin-top: 18px;
   display: none;
@@ -394,6 +408,7 @@ body {
         <div class="hero-text">
           <h1 id="profileName">Loading...</h1>
           <p id="profileSub">Viewing this seller's listings.</p>
+          <p id="profileEmail" class="profile-email"></p>
         </div>
       </div>
 
@@ -489,6 +504,7 @@ let pendingProfileImageUrl = "";
 
 const profileName = document.getElementById("profileName");
 const profileSub = document.getElementById("profileSub");
+const profileEmail = document.getElementById("profileEmail");
 const profileAvatarWrap = document.getElementById("profileAvatarWrap");
 const editProfileBtn = document.getElementById("editProfileBtn");
 const editProfilePanel = document.getElementById("editProfilePanel");
@@ -601,6 +617,17 @@ function renderProfileHeader(userData) {
   currentProfileData = userData;
   profileName.innerText = userData.username;
   profileAvatarWrap.innerHTML = renderAvatar(userData.username, userData.profile_image);
+
+  if (!isViewingOwnProfile() && userData.email) {
+    profileEmail.innerHTML = `<a href="mailto:${escapeHtml(userData.email)}">${escapeHtml(userData.email)}</a>`;
+    profileEmail.style.display = "block";
+  } else if (isViewingOwnProfile() && userData.email) {
+    profileEmail.innerHTML = `<a href="mailto:${escapeHtml(userData.email)}">${escapeHtml(userData.email)}</a>`;
+    profileEmail.style.display = "block";
+  } else {
+    profileEmail.textContent = "";
+    profileEmail.style.display = "none";
+  }
 }
 
 async function uploadProfileImageIfNeeded() {
@@ -921,6 +948,8 @@ async function loadProfile() {
   if (!seller) {
     profileName.innerText = "User Not Found";
     profileSub.innerText = "No seller was provided.";
+    profileEmail.textContent = "";
+    profileEmail.style.display = "none";
     profileAvatarWrap.innerHTML = renderAvatar("User", "", "large");
     return;
   }
@@ -943,6 +972,8 @@ async function loadProfile() {
     } else {
       profileName.innerText = "User Not Found";
       profileSub.innerText = "Viewing this seller's listings.";
+      profileEmail.textContent = "";
+      profileEmail.style.display = "none";
       profileAvatarWrap.innerHTML = renderAvatar("User", "", "large");
     }
 
@@ -986,6 +1017,8 @@ async function loadProfile() {
     console.error(err);
     profileName.innerText = "Error Loading Profile";
     profileSub.innerText = "Could not load seller information.";
+    profileEmail.textContent = "";
+    profileEmail.style.display = "none";
     profileAvatarWrap.innerHTML = renderAvatar("User", "", "large");
   }
 }
