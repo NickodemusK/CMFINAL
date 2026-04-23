@@ -110,6 +110,30 @@ def init_db():
     )
     """)
 
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS return_requests (
+        id SERIAL PRIMARY KEY,
+        listing_id INTEGER REFERENCES listings(id) ON DELETE CASCADE,
+        seller_id INTEGER REFERENCES users(id),
+        buyer_id INTEGER REFERENCES users(id),
+        buyer_email VARCHAR(255) NOT NULL,
+        reason TEXT NOT NULL,
+        status VARCHAR(20) DEFAULT 'pending',
+        seller_note TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        reviewed_at TIMESTAMP
+    )
+    """)
+
+    cur.execute("""
+    ALTER TABLE return_requests
+    ADD COLUMN IF NOT EXISTS seller_note TEXT
+    """)
+    cur.execute("""
+    ALTER TABLE return_requests
+    ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP
+    """)
+
     conn.commit()
     cur.close()
     conn.close()
@@ -392,7 +416,7 @@ def mark_listing_sold(listing_id):
     data = request.get_json()
     user_id = data.get("user_id")
     user_role = data.get("role")
-    buyer_email = (data.get("buyer_email") or "").strip()
+    buyer_email = (data.get("buyer_email") or "").strip().lower()
 
     if not buyer_email:
         return jsonify({"error": "Buyer email is required"}), 400
@@ -400,31 +424,45 @@ def mark_listing_sold(listing_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT user_id FROM listings WHERE id = %s", (listing_id,))
-    row = cur.fetchone()
+    try:
+        cur.execute("SELECT user_id, COALESCE(status, 'active') FROM listings WHERE id = %s", (listing_id,))
+        row = cur.fetchone()
 
-    if not row:
+        if not row:
+            return jsonify({"error": "Listing not found"}), 404
+
+        if user_role != "admin" and int(row[0]) != int(user_id):
+            return jsonify({"error": "Forbidden"}), 403
+
+        if row[1].lower() == "sold":
+            return jsonify({"error": "Listing is already sold"}), 400
+
+        cur.execute("SELECT id, email FROM users WHERE LOWER(email) = LOWER(%s)", (buyer_email,))
+        buyer_row = cur.fetchone()
+
+        if not buyer_row:
+            return jsonify({"error": "Buyer email does not belong to a registered user"}), 400
+
+        if int(buyer_row[0]) == int(user_id):
+            return jsonify({"error": "You cannot mark your own listing as bought by yourself"}), 400
+
+        cur.execute("""
+            UPDATE listings
+            SET status = 'sold',
+                buyer_email = %s
+            WHERE id = %s
+        """, (buyer_row[1], listing_id))
+
+        conn.commit()
+        return jsonify({"success": True, "message": "Listing marked as sold"}), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
         cur.close()
         conn.close()
-        return jsonify({"error": "Listing not found"}), 404
-
-    if user_role != "admin" and int(row[0]) != int(user_id):
-        cur.close()
-        conn.close()
-        return jsonify({"error": "Forbidden"}), 403
-
-    cur.execute("""
-        UPDATE listings
-        SET status = 'sold',
-            buyer_email = %s
-        WHERE id = %s
-    """, (buyer_email, listing_id))
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({"success": True, "message": "Listing marked as sold"}), 200
 
 
 # Optional: mark sold listing back to active
@@ -566,7 +604,7 @@ def get_listings_by_seller(username):
     } for r in rows]), 200
 
 
-# Bought items by buyer email
+# Bought items for the logged-in buyer, including return status if one exists
 @app.route("/api/listings/bought/<path:buyer_email>", methods=["GET"])
 def get_bought_items(buyer_email):
     conn = get_db_connection()
@@ -583,13 +621,33 @@ def get_bought_items(buyer_email):
             l.image,
             COALESCE(NULLIF(l.seller, ''), u.username) AS seller,
             COALESCE(l.status, 'active') AS status,
-            l.buyer_email
+            l.buyer_email,
+            rr.id AS return_request_id,
+            rr.reason AS return_reason,
+            rr.status AS return_status,
+            rr.seller_note,
+            rr.created_at AS return_created_at,
+            rr.reviewed_at AS return_reviewed_at
         FROM listings l
         LEFT JOIN users u ON l.user_id = u.id
+        LEFT JOIN LATERAL (
+            SELECT
+                id,
+                reason,
+                status,
+                seller_note,
+                created_at,
+                reviewed_at
+            FROM return_requests
+            WHERE listing_id = l.id
+              AND LOWER(buyer_email) = LOWER(%s)
+            ORDER BY created_at DESC
+            LIMIT 1
+        ) rr ON TRUE
         WHERE LOWER(COALESCE(l.buyer_email, '')) = LOWER(%s)
           AND COALESCE(l.status, 'active') = 'sold'
         ORDER BY l.id DESC
-    """, (buyer_email,))
+    """, (buyer_email, buyer_email))
 
     rows = cur.fetchall()
     cur.close()
@@ -605,8 +663,222 @@ def get_bought_items(buyer_email):
         "image": r[6],
         "seller": r[7],
         "status": r[8],
-        "buyer_email": r[9]
+        "buyer_email": r[9],
+        "return_request_id": r[10],
+        "return_reason": r[11],
+        "return_status": r[12],
+        "seller_note": r[13],
+        "return_created_at": str(r[14]) if r[14] else None,
+        "return_reviewed_at": str(r[15]) if r[15] else None
     } for r in rows]), 200
+
+
+# ========================
+# RETURNS
+# ========================
+@app.route("/api/returns/request", methods=["POST"])
+def create_return_request():
+    data = request.get_json() or {}
+    listing_id = data.get("listing_id")
+    buyer_id = data.get("buyer_id")
+    buyer_email = (data.get("buyer_email") or "").strip().lower()
+    reason = (data.get("reason") or "").strip()
+
+    if not listing_id or not buyer_id or not buyer_email or not reason:
+        return jsonify({"error": "listing_id, buyer_id, buyer_email, and reason are required"}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT id, email
+            FROM users
+            WHERE id = %s
+        """, (buyer_id,))
+        buyer_row = cur.fetchone()
+
+        if not buyer_row:
+            return jsonify({"error": "Buyer not found"}), 404
+
+        if (buyer_row[1] or "").strip().lower() != buyer_email:
+            return jsonify({"error": "Buyer email does not match the logged-in user"}), 403
+
+        cur.execute("""
+            SELECT id, user_id, buyer_email, COALESCE(status, 'active')
+            FROM listings
+            WHERE id = %s
+        """, (listing_id,))
+        listing_row = cur.fetchone()
+
+        if not listing_row:
+            return jsonify({"error": "Listing not found"}), 404
+
+        listing_owner_id = listing_row[1]
+        listing_buyer_email = (listing_row[2] or "").strip().lower()
+        listing_status = (listing_row[3] or "active").strip().lower()
+
+        if listing_status != "sold":
+            return jsonify({"error": "Only sold items can be returned"}), 400
+
+        if listing_buyer_email != buyer_email:
+            return jsonify({"error": "Only the buyer of this item can request a return"}), 403
+
+        cur.execute("""
+            SELECT id
+            FROM return_requests
+            WHERE listing_id = %s
+              AND buyer_id = %s
+              AND status = 'pending'
+        """, (listing_id, buyer_id))
+        existing_pending = cur.fetchone()
+
+        if existing_pending:
+            return jsonify({"error": "A return request for this item is already pending"}), 400
+
+        cur.execute("""
+            INSERT INTO return_requests (listing_id, seller_id, buyer_id, buyer_email, reason, status)
+            VALUES (%s, %s, %s, %s, %s, 'pending')
+            RETURNING id
+        """, (listing_id, listing_owner_id, buyer_id, buyer_row[1], reason))
+
+        new_return_id = cur.fetchone()[0]
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Return request submitted",
+            "return_request_id": new_return_id
+        }), 201
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route("/api/returns/seller/<int:seller_id>", methods=["GET"])
+def get_return_requests_for_seller(seller_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            rr.id,
+            rr.listing_id,
+            l.title,
+            l.price,
+            l.category,
+            l.condition,
+            l.image,
+            COALESCE(NULLIF(l.seller, ''), u.username) AS seller,
+            rr.buyer_email,
+            rr.reason,
+            rr.status,
+            rr.seller_note,
+            rr.created_at,
+            rr.reviewed_at
+        FROM return_requests rr
+        JOIN listings l ON rr.listing_id = l.id
+        LEFT JOIN users u ON l.user_id = u.id
+        WHERE rr.seller_id = %s
+        ORDER BY
+            CASE WHEN rr.status = 'pending' THEN 0 ELSE 1 END,
+            rr.created_at DESC
+    """, (seller_id,))
+
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return jsonify([{
+        "id": r[0],
+        "listing_id": r[1],
+        "title": r[2],
+        "price": float(r[3]) if r[3] is not None else 0,
+        "category": r[4],
+        "condition": r[5],
+        "image": r[6],
+        "seller": r[7],
+        "buyer_email": r[8],
+        "reason": r[9],
+        "status": r[10],
+        "seller_note": r[11],
+        "created_at": str(r[12]) if r[12] else None,
+        "reviewed_at": str(r[13]) if r[13] else None
+    } for r in rows]), 200
+
+
+@app.route("/api/returns/<int:return_id>/review", methods=["PUT"])
+def review_return_request(return_id):
+    data = request.get_json() or {}
+    seller_id = data.get("seller_id")
+    user_role = data.get("role")
+    action = (data.get("action") or "").strip().lower()
+    seller_note = (data.get("seller_note") or "").strip()
+
+    if action not in ["approve", "deny"]:
+        return jsonify({"error": "Action must be approve or deny"}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT id, listing_id, seller_id, status
+            FROM return_requests
+            WHERE id = %s
+        """, (return_id,))
+        return_row = cur.fetchone()
+
+        if not return_row:
+            return jsonify({"error": "Return request not found"}), 404
+
+        listing_id = return_row[1]
+        request_seller_id = return_row[2]
+        request_status = (return_row[3] or "").lower()
+
+        if request_status != "pending":
+            return jsonify({"error": "This return request has already been reviewed"}), 400
+
+        if user_role != "admin" and int(request_seller_id) != int(seller_id):
+            return jsonify({"error": "Forbidden"}), 403
+
+        new_status = "approved" if action == "approve" else "denied"
+
+        cur.execute("""
+            UPDATE return_requests
+            SET status = %s,
+                seller_note = %s,
+                reviewed_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+        """, (new_status, seller_note if seller_note else None, return_id))
+
+        if action == "approve":
+            cur.execute("""
+                UPDATE listings
+                SET status = 'active',
+                    buyer_email = NULL
+                WHERE id = %s
+            """, (listing_id,))
+
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "message": f"Return request {new_status}"
+        }), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
 
 
 # ========================
