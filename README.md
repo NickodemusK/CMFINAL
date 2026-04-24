@@ -5,7 +5,7 @@
 A cloud-based campus marketplace for Hampton University students.
 
 # Deployed Link
-http://cloudmart-prod.eba-tkwrv4vn.us-east-2.elasticbeanstalk.com/
+https://linktr.ee/CloudMartHU
 
 ## Prerequisites
 
