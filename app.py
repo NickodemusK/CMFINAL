@@ -557,7 +557,7 @@ def mark_listing_active(listing_id):
         cur.close()
         conn.close()
 
-
+#Ayinde
 @app.route("/api/listings/<int:listing_id>", methods=["DELETE"])
 def delete_listing(listing_id):
     data = request.get_json() or {}
