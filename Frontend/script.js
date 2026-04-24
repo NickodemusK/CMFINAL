@@ -1,4 +1,4 @@
-// Mobile nav toggle
+//Tyson  Mobile nav toggle
 const navToggle = document.getElementById("navToggle");
 const navMenu = document.getElementById("navMenu");
 
