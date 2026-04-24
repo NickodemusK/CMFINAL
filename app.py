@@ -7,16 +7,13 @@ import os
 import uuid
 from dotenv import load_dotenv
 
-# Load environment variables from .env
 load_dotenv()
 
-# S3 config
 from s3_config import s3, BUCKET_NAME, AWS_REGION
 
 app = Flask(__name__)
 CORS(app)
 
-# Database & Tunnel Configuration
 SSH_HOST = "18.190.235.250"
 SSH_USER = "ec2-user"
 SSH_KEY_PATH = os.path.join(os.path.dirname(__file__), "Resources", "ec2Test.pem")
@@ -71,10 +68,7 @@ def init_db():
     )
     """)
 
-    cur.execute("""
-    ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS profile_image TEXT
-    """)
+    cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_image TEXT")
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS listings (
@@ -91,18 +85,9 @@ def init_db():
     )
     """)
 
-    cur.execute("""
-    ALTER TABLE listings
-    ADD COLUMN IF NOT EXISTS seller VARCHAR(100)
-    """)
-    cur.execute("""
-    ALTER TABLE listings
-    ADD COLUMN IF NOT EXISTS buyer_email VARCHAR(255)
-    """)
-    cur.execute("""
-    ALTER TABLE listings
-    ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'
-    """)
+    cur.execute("ALTER TABLE listings ADD COLUMN IF NOT EXISTS seller VARCHAR(100)")
+    cur.execute("ALTER TABLE listings ADD COLUMN IF NOT EXISTS buyer_email VARCHAR(255)")
+    cur.execute("ALTER TABLE listings ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'")
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS wishlist (
@@ -129,14 +114,8 @@ def init_db():
     )
     """)
 
-    cur.execute("""
-    ALTER TABLE return_requests
-    ADD COLUMN IF NOT EXISTS seller_note TEXT
-    """)
-    cur.execute("""
-    ALTER TABLE return_requests
-    ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP
-    """)
+    cur.execute("ALTER TABLE return_requests ADD COLUMN IF NOT EXISTS seller_note TEXT")
+    cur.execute("ALTER TABLE return_requests ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP")
 
     conn.commit()
     cur.close()
@@ -352,16 +331,16 @@ def get_listings():
 
     return jsonify([{
         "id": r[0],
-    "user_id": r[1],
-    "title": r[2],
-    "price": float(r[3]) if r[3] is not None else 0,
-    "category": r[4],
-    "condition": r[5],
-    "image": r[6],
-    "seller": r[7],
-    "seller_email": r[8],
-    "status": r[9],
-    "buyer_email": r[10]
+        "user_id": r[1],
+        "title": r[2],
+        "price": float(r[3]) if r[3] is not None else 0,
+        "category": r[4],
+        "condition": r[5],
+        "image": r[6],
+        "seller": r[7],
+        "seller_email": r[8],
+        "status": r[9],
+        "buyer_email": r[10]
     } for r in rows]), 200
 
 
@@ -396,17 +375,17 @@ def get_listing_by_id(listing_id):
         return jsonify({"error": "Listing not found"}), 404
 
     return jsonify({
-        "id": r[0],
-    "user_id": r[1],
-    "title": r[2],
-    "price": float(r[3]) if r[3] is not None else 0,
-    "category": r[4],
-    "condition": r[5],
-    "image": r[6],
-    "seller": r[7],
-    "seller_email": r[8],
-    "status": r[9],
-    "buyer_email": r[10]
+        "id": row[0],
+        "user_id": row[1],
+        "title": row[2],
+        "price": float(row[3]) if row[3] is not None else 0,
+        "category": row[4],
+        "condition": row[5],
+        "image": row[6],
+        "seller": row[7],
+        "seller_email": row[8],
+        "status": row[9],
+        "buyer_email": row[10]
     }), 200
 
 
@@ -590,7 +569,7 @@ def delete_listing(listing_id):
         """, (listing_id,))
 
         conn.commit()
-        return jsonify({"success": True, "message": "Listing soft deleted"}), 200
+        return jsonify({"success": True, "message": "Deleted"}), 200
 
     except Exception as e:
         conn.rollback()
@@ -730,16 +709,16 @@ def get_listings_by_seller(username):
 
     return jsonify([{
         "id": r[0],
-    "user_id": r[1],
-    "title": r[2],
-    "price": float(r[3]) if r[3] is not None else 0,
-    "category": r[4],
-    "condition": r[5],
-    "image": r[6],
-    "seller": r[7],
-    "seller_email": r[8],
-    "status": r[9],
-    "buyer_email": r[10]
+        "user_id": r[1],
+        "title": r[2],
+        "price": float(r[3]) if r[3] is not None else 0,
+        "category": r[4],
+        "condition": r[5],
+        "image": r[6],
+        "seller": r[7],
+        "seller_email": r[8],
+        "status": r[9],
+        "buyer_email": r[10]
     } for r in rows]), 200
 
 #Nickodemus
@@ -829,11 +808,7 @@ def create_return_request():
     cur = conn.cursor()
 
     try:
-        cur.execute("""
-            SELECT id, email
-            FROM users
-            WHERE id = %s
-        """, (buyer_id,))
+        cur.execute("SELECT id, email FROM users WHERE id = %s", (buyer_id,))
         buyer_row = cur.fetchone()
 
         if not buyer_row:
@@ -1033,11 +1008,18 @@ def get_wishlist():
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT l.id, l.user_id, l.title, l.price, l.category, l.condition, l.image,
-       COALESCE(NULLIF(l.seller, ''), u.username) AS seller,
-       u.email AS seller_email,
-       COALESCE(l.status, 'active') AS status,
-       l.buyer_email
+        SELECT
+            l.id,
+            l.user_id,
+            l.title,
+            l.price,
+            l.category,
+            l.condition,
+            l.image,
+            COALESCE(NULLIF(l.seller, ''), u.username) AS seller,
+            u.email AS seller_email,
+            COALESCE(l.status, 'active') AS status,
+            l.buyer_email
         FROM wishlist w
         JOIN listings l ON w.listing_id = l.id
         LEFT JOIN users u ON l.user_id = u.id
@@ -1052,16 +1034,16 @@ def get_wishlist():
 
     return jsonify([{
         "id": r[0],
-    "user_id": r[1],
-    "title": r[2],
-    "price": float(r[3]) if r[3] is not None else 0,
-    "category": r[4],
-    "condition": r[5],
-    "image": r[6],
-    "seller": r[7],
-    "seller_email": r[8],
-    "status": r[9],
-    "buyer_email": r[10]
+        "user_id": r[1],
+        "title": r[2],
+        "price": float(r[3]) if r[3] is not None else 0,
+        "category": r[4],
+        "condition": r[5],
+        "image": r[6],
+        "seller": r[7],
+        "seller_email": r[8],
+        "status": r[9],
+        "buyer_email": r[10]
     } for r in rows]), 200
 
 
@@ -1111,8 +1093,8 @@ def remove_from_wishlist(listing_id):
         DELETE FROM wishlist
         WHERE user_id = %s AND listing_id = %s
     """, (user_id, listing_id))
-    conn.commit()
 
+    conn.commit()
     cur.close()
     conn.close()
 
