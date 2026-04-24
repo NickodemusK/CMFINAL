@@ -321,7 +321,7 @@ def create_listing():
         cur.close()
         conn.close()
 
-
+#Tyson
 @app.route("/api/listings", methods=["GET"])
 def get_listings():
     conn = get_db_connection()
@@ -454,7 +454,7 @@ def update_listing(listing_id):
     finally:
         cur.close()
         conn.close()
-
+#Tyson
 
 @app.route("/api/listings/<int:listing_id>/mark-sold", methods=["PUT"])
 def mark_listing_sold(listing_id):
