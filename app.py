@@ -1,4 +1,3 @@
-# Collaboration from Howard Ames, Nickodemus, and Gemini
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from sshtunnel import SSHTunnelForwarder
@@ -203,8 +202,9 @@ def login():
 
 
 # ========================
-# S3 UPLOADS
+# S3 UPLOADS - Nick
 # ========================
+
 @app.route("/api/uploads/presign", methods=["POST", "OPTIONS"])
 def generate_presigned_upload_url():
     if request.method == "OPTIONS":
@@ -241,7 +241,7 @@ def generate_presigned_upload_url():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
+#Nickodemus
 @app.route("/api/uploads/profile-presign", methods=["POST", "OPTIONS"])
 def generate_profile_presigned_upload_url():
     if request.method == "OPTIONS":
@@ -742,7 +742,7 @@ def get_listings_by_seller(username):
     "buyer_email": r[10]
     } for r in rows]), 200
 
-
+#Nickodemus
 @app.route("/api/listings/bought/<path:buyer_email>", methods=["GET"])
 def get_bought_items(buyer_email):
     conn = get_db_connection()
@@ -897,7 +897,7 @@ def create_return_request():
         cur.close()
         conn.close()
 
-
+#Nickodemus
 @app.route("/api/returns/seller/<int:seller_id>", methods=["GET"])
 def get_return_requests_for_seller(seller_id):
     conn = get_db_connection()
