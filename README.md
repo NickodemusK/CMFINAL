@@ -4,6 +4,9 @@
 
 A cloud-based campus marketplace for Hampton University students.
 
+# Deployed Link
+http://cloudmart-prod.eba-tkwrv4vn.us-east-2.elasticbeanstalk.com/
+
 ## Prerequisites
 
 - **Python 3.10+** installed
