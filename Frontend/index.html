@@ -1,3 +1,4 @@
+<!-- Tyson Satterwhite -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -5,9 +6,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>CloudMart Marketplace</title>
 <link rel="stylesheet" href="styles.css" />
+
 <style>
 * { box-sizing: border-box; margin:0; padding:0; }
-body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #fff; line-height:1.5; }
+
+body {
+  font-family: system-ui, Arial, sans-serif;
+  background: #0b1020;
+  color: #fff;
+  line-height:1.5;
+}
 
 .site-header {
   background: #111827;
@@ -47,26 +55,34 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
   font-weight: bold;
   transition: 0.2s;
 }
+
 .btn:hover { opacity: 0.85; }
 
-.btn-primary { background: #2563eb; border: none; color: white; }
-.btn-secondary { background: #ef4444; border: none; color: white; }
-.btn-outline { border: 1px solid white; background: transparent; color: white; }
-.full { width: 100%; }
-
-.user-btn {
-  background: transparent;
+.btn-primary {
+  background: #2563eb;
   border: none;
   color: white;
-  cursor: pointer;
-  font: inherit;
-  padding: 0 4px;
-}
-.user-btn:hover {
-  color: #93c5fd;
 }
 
-.fb-layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 70px); }
+.btn-secondary {
+  background: #ef4444;
+  border: none;
+  color: white;
+}
+
+.btn-outline {
+  border: 1px solid white;
+  background: transparent;
+  color: white;
+}
+
+.full { width: 100%; }
+
+.fb-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: calc(100vh - 70px);
+}
 
 .fb-sidebar {
   padding: 20px;
@@ -87,13 +103,33 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
   outline: none;
 }
 
-.fb-section h4 { margin-bottom: 10px; font-weight: bold; }
-.fb-section label { display: block; margin-bottom: 8px; cursor: pointer; font-size: 0.95rem; }
+.fb-section h4 {
+  margin-bottom: 10px;
+  font-weight: bold;
+}
 
-.fb-content { padding: 20px; overflow-y: auto; }
-.fb-topbar h2 { font-size: 1.5rem; margin-bottom: 15px; }
+.fb-section label {
+  display: block;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
 
-.fb-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+.fb-content {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.fb-topbar h2 {
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+}
+
+.fb-grid {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 16px;
+}
 
 .feature-card {
   background: #111827;
@@ -123,8 +159,15 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
   gap: 6px;
 }
 
-.price { font-weight: bold; font-size: 1.1rem; }
-.condition { font-size: 0.85rem; color: #9ca3af; }
+.price {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.condition {
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
 
 .card-header-row {
   display: flex;
@@ -140,9 +183,16 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
   cursor: pointer;
   transition: transform 0.2s;
   padding: 0;
+  color: white;
 }
-.heart-btn:hover { transform: scale(1.2); }
-.heart-btn.saved { color: #ef4444; }
+
+.heart-btn:hover {
+  transform: scale(1.2);
+}
+
+.heart-btn.saved {
+  color: #ef4444;
+}
 
 .seller-btn {
   background: transparent;
@@ -153,6 +203,7 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
   font: inherit;
   text-decoration: underline;
 }
+
 .seller-btn:hover {
   color: #bfdbfe;
 }
@@ -160,6 +211,18 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
 .muted {
   color: #9ca3af;
   font-size: 0.92rem;
+}
+
+.card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.card-actions .btn {
+  flex: 1;
+  padding: 8px 10px;
+  font-size: 0.9rem;
 }
 
 @media (max-width: 1200px) {
@@ -173,10 +236,16 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
 
 @media (max-width: 600px) {
   .fb-grid { grid-template-columns: 1fr; }
-  .nav-menu { flex-direction: column; align-items: flex-end; gap: 5px; }
+
+  .nav-menu {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+  }
 }
 </style>
 </head>
+
 <body>
 
 <header class="site-header">
@@ -220,15 +289,16 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
   </aside>
 
   <section class="fb-content">
-    <div class="fb-topbar"><h2>Today's Picks</h2></div>
+    <div class="fb-topbar">
+      <h2>Today's Picks</h2>
+    </div>
+
     <div id="listings" class="fb-grid"></div>
   </section>
 </main>
 
 <script>
-const API = (window.location.protocol === "http:" || window.location.protocol === "https:")
-  ? window.location.origin
-  : "http://localhost:5001";
+const API = "http://localhost:5001";
 
 let allListings = [];
 let wishlistItems = [];
@@ -242,7 +312,6 @@ if (user) {
   window.location.href = "Signin.html";
 }
 
-// Hide admin button if user is not admin
 if (!user || user.role !== "admin") {
   const adminBtn = document.getElementById("adminBtn");
   if (adminBtn) adminBtn.style.display = "none";
@@ -261,10 +330,21 @@ function updateCartCount() {
   if (cartEl) cartEl.innerText = cart.length;
 }
 
-function goToCreatePage() { window.location.href = "create.html"; }
-function goToCartPage() { window.location.href = "cart.html"; }
-function goToWishlist() { window.location.href = "wishlist.html"; }
-function goToAdmin() { window.location.href = "admin.html"; }
+function goToCreatePage() {
+  window.location.href = "create.html";
+}
+
+function goToCartPage() {
+  window.location.href = "cart.html";
+}
+
+function goToWishlist() {
+  window.location.href = "wishlist.html";
+}
+
+function goToAdmin() {
+  window.location.href = "admin.html";
+}
 
 function goToSellerListings(sellerName) {
   window.location.href = `profile.html?seller=${encodeURIComponent(sellerName)}`;
@@ -299,12 +379,14 @@ async function loadListings() {
     renderListings(allListings);
   } catch (err) {
     console.error("Error loading listings:", err);
-    document.getElementById("listings").innerHTML = "<p class='muted'>Unable to load listings right now.</p>";
+    document.getElementById("listings").innerHTML =
+      "<p class='muted'>Unable to load listings right now.</p>";
   }
 }
 
 async function loadWishlist() {
   if (!user || user.id == null) return;
+
   try {
     const res = await fetch(`${API}/api/wishlist?user_id=${user.id}`);
     const data = await res.json();
@@ -329,13 +411,17 @@ function renderListings(data) {
     const isOwner = user && user.id != null && Number(item.user_id) === Number(user.id);
     const hasPermission = isAdmin || isOwner;
 
-    const isSaved = wishlistItems.some(w => Number(w.id) === Number(item.id));
+    const isSaved = wishlistItems.some(w =>
+      Number(w.id) === Number(item.id) ||
+      Number(w.listing_id) === Number(item.id)
+    );
 
     const safeTitle = escapeHtml(item.title);
     const safeCategory = escapeHtml(item.category);
     const safeCondition = escapeHtml(item.condition);
     const safeSeller = escapeHtml(item.seller || "");
-    const safeImage = escapeHtml(item.image);
+    const safeSellerEmail = escapeHtml(item.seller_email || "No email available");
+    const safeImage = escapeHtml(item.image || "https://via.placeholder.com/300x180?text=No+Image");
     const displayPrice = Number(item.price) || 0;
 
     const sellerMarkup = safeSeller
@@ -345,33 +431,49 @@ function renderListings(data) {
     container.innerHTML += `
       <article class="feature-card">
         <img src="${safeImage}" class="product-img" alt="${safeTitle}">
+
         <div class="card-body">
           <div class="card-header-row">
             <p class="price">$${displayPrice.toFixed(2)}</p>
-            ${
-              user && user.id != null ? `
-                <button
-                  class="heart-btn ${isSaved ? 'saved' : ''}"
-                  onclick="toggleWishlist(${Number(item.id)}, ${isSaved})"
-                  title="${isSaved ? 'Remove from wishlist' : 'Add to wishlist'}"
-                >
-                  ${isSaved ? '❤️' : '🤍'}
-                </button>
-              ` : ""
-            }
+
+            <button
+              class="heart-btn ${isSaved ? "saved" : ""}"
+              onclick="toggleWishlist(${Number(item.id)}, ${isSaved})"
+              title="${isSaved ? "Remove from wishlist" : "Add to wishlist"}"
+            >
+              ${isSaved ? "❤️" : "🤍"}
+            </button>
           </div>
 
           <h3>${safeTitle}</h3>
+
           <p class="condition">${safeCategory} • ${safeCondition}</p>
           <p class="muted">Seller: ${sellerMarkup}</p>
+          <p class="muted">Email: ${safeSellerEmail}</p>
 
-          <button onclick="addToCart(${Number(item.id)})" class="btn btn-primary full">Add to Cart</button>
+          <button
+            onclick="addToCart(${Number(item.id)})"
+            class="btn btn-primary full"
+          >
+            🛒 Add to Cart
+          </button>
 
           ${
             hasPermission ? `
-              <div style="display: flex; gap: 5px; margin-top: 5px;">
-                <button onclick="editListing(${Number(item.id)})" class="btn btn-outline full" style="flex:1;">Edit</button>
-                <button onclick="deleteListing(${Number(item.id)})" class="btn btn-secondary full" style="flex:1;">Delete</button>
+              <div class="card-actions">
+                <button
+                  onclick="editListing(${Number(item.id)})"
+                  class="btn btn-outline"
+                >
+                  Edit
+                </button>
+
+                <button
+                  onclick="deleteListing(${Number(item.id)})"
+                  class="btn btn-secondary"
+                >
+                  Delete
+                </button>
               </div>
             ` : ""
           }
@@ -386,8 +488,14 @@ function addToCart(id) {
 
   if (!item) return;
 
-  if (item.status !== "active") {
-    return alert("This item has already been sold.");
+  if (item.status && item.status !== "active") {
+    return alert("This item has already been sold or is not active.");
+  }
+
+  const alreadyInCart = cart.some(cartItem => Number(cartItem.id) === Number(id));
+
+  if (alreadyInCart) {
+    return alert("This item is already in your cart.");
   }
 
   cart.push(item);
@@ -398,6 +506,7 @@ function addToCart(id) {
 
 function applyFilters() {
   const searchQuery = document.getElementById("searchInput").value.toLowerCase().trim();
+
   const selectedCategories = Array.from(
     document.querySelectorAll("input[type=checkbox]:checked")
   ).map(cb => cb.value);
@@ -423,7 +532,11 @@ function applyFilters() {
 
 function clearFilters() {
   document.getElementById("searchInput").value = "";
-  document.querySelectorAll("input[type=checkbox]").forEach(cb => cb.checked = false);
+
+  document.querySelectorAll("input[type=checkbox]").forEach(cb => {
+    cb.checked = false;
+  });
+
   renderListings(allListings);
 }
 
@@ -458,11 +571,23 @@ async function deleteListing(listingId) {
 }
 
 async function toggleWishlist(listingId, isSaved) {
-  if (!user) return alert("Please log in first.");
+  if (!user) {
+    return alert("Please log in first.");
+  }
+
   try {
     const method = isSaved ? "DELETE" : "POST";
-    const url = isSaved ? `${API}/api/wishlist/${listingId}?user_id=${user.id}` : `${API}/api/wishlist`;
-    const body = isSaved ? null : JSON.stringify({ user_id: user.id, listing_id: listingId });
+
+    const url = isSaved
+      ? `${API}/api/wishlist/${listingId}?user_id=${user.id}`
+      : `${API}/api/wishlist`;
+
+    const body = isSaved
+      ? null
+      : JSON.stringify({
+          user_id: user.id,
+          listing_id: listingId
+        });
 
     const res = await fetch(url, {
       method,
@@ -473,18 +598,24 @@ async function toggleWishlist(listingId, isSaved) {
     if (res.ok) {
       await loadWishlist();
       renderListings(allListings);
+    } else {
+      const data = await res.json();
+      alert(data.error || "Wishlist action failed.");
     }
   } catch (err) {
     console.error("Wishlist error:", err);
+    alert("Error connecting to server.");
   }
 }
 
 async function init() {
   await loadWishlist();
   await loadListings();
+  updateCartCount();
 }
 
 init();
 </script>
+
 </body>
 </html>

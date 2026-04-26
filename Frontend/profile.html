@@ -1,3 +1,4 @@
+<!-- Created by Nickodemus Konde -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -7,9 +8,7 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
   font-family: system-ui, Arial, sans-serif;
@@ -114,21 +113,6 @@ body {
   font-size: 1rem;
 }
 
-
-.profile-email {
-  margin-top: 8px;
-  font-size: 0.98rem;
-}
-
-.profile-email a {
-  color: #60a5fa;
-  text-decoration: none;
-}
-
-.profile-email a:hover {
-  text-decoration: underline;
-}
-
 .edit-profile-panel {
   margin-top: 18px;
   display: none;
@@ -163,9 +147,7 @@ body {
   padding: 10px 12px;
 }
 
-.form-group input[type="file"] {
-  padding: 8px;
-}
+.form-group input[type="file"] { padding: 8px; }
 
 .preview-wrap {
   display: flex;
@@ -215,9 +197,7 @@ body {
   justify-content: center;
 }
 
-.section-block {
-  scroll-margin-top: 95px;
-}
+.section-block { scroll-margin-top: 95px; }
 
 .section-title {
   font-size: 1.5rem;
@@ -282,6 +262,12 @@ body {
   background: rgba(239,68,68,0.15);
   color: #f87171;
   border: 1px solid rgba(248,113,113,0.35);
+}
+
+.badge.deleted {
+  background: rgba(107,114,128,0.18);
+  color: #d1d5db;
+  border: 1px solid rgba(209,213,219,0.28);
 }
 
 .badge.pending {
@@ -386,6 +372,7 @@ body {
 }
 </style>
 </head>
+
 <body>
 <header class="site-header">
   <a class="brand" href="index.html">
@@ -403,7 +390,6 @@ body {
         <div class="hero-text">
           <h1 id="profileName">Loading...</h1>
           <p id="profileSub">Viewing this seller's listings.</p>
-          <p id="profileEmail" class="profile-email"></p>
         </div>
       </div>
 
@@ -440,6 +426,7 @@ body {
   <nav class="section-nav" id="sectionNav">
     <a href="#activeSection" class="btn btn-outline">Active Listings</a>
     <a href="#soldSection" class="btn btn-outline">Sold Listings</a>
+    <a href="#deletedSection" class="btn btn-outline">Deleted Listings</a>
     <a href="#boughtSection" class="btn btn-outline" id="boughtNavBtn" style="display:none;">Bought Items</a>
     <a href="#returnsSection" class="btn btn-outline" id="returnsNavBtn" style="display:none;">Return Requests</a>
   </nav>
@@ -454,6 +441,12 @@ body {
     <h2 class="section-title">Sold Listings</h2>
     <div id="soldListings" class="grid"></div>
     <p id="soldEmpty" class="empty" style="display:none;">No sold listings found.</p>
+  </section>
+
+  <section id="deletedSection" class="section-block">
+    <h2 class="section-title">Deleted Listings</h2>
+    <div id="deletedListings" class="grid"></div>
+    <p id="deletedEmpty" class="empty" style="display:none;">No deleted listings found.</p>
   </section>
 
   <section id="boughtSection" class="section-block" style="display:none;">
@@ -480,10 +473,7 @@ body {
 </main>
 
 <script>
-const API = (window.location.protocol === "http:" || window.location.protocol === "https:")
-  ? window.location.origin
-  : "http://localhost:5001";
-const DEFAULT_AVATAR = "https://ui-avatars.com/api/?background=0f172a&color=93c5fd&name=";
+const API = "http://localhost:5001";
 
 const params = new URLSearchParams(window.location.search);
 const seller = params.get("seller");
@@ -494,7 +484,6 @@ let pendingProfileImageUrl = "";
 
 const profileName = document.getElementById("profileName");
 const profileSub = document.getElementById("profileSub");
-const profileEmail = document.getElementById("profileEmail");
 const profileAvatarWrap = document.getElementById("profileAvatarWrap");
 const editProfileBtn = document.getElementById("editProfileBtn");
 const editProfilePanel = document.getElementById("editProfilePanel");
@@ -504,6 +493,7 @@ const previewWrap = document.getElementById("previewWrap");
 
 const activeListingsEl = document.getElementById("activeListings");
 const soldListingsEl = document.getElementById("soldListings");
+const deletedListingsEl = document.getElementById("deletedListings");
 const boughtListingsEl = document.getElementById("boughtListings");
 
 const pendingReturnRequestsEl = document.getElementById("pendingReturnRequests");
@@ -512,6 +502,7 @@ const approvedReturnRequestsEl = document.getElementById("approvedReturnRequests
 
 const activeEmpty = document.getElementById("activeEmpty");
 const soldEmpty = document.getElementById("soldEmpty");
+const deletedEmpty = document.getElementById("deletedEmpty");
 const boughtEmpty = document.getElementById("boughtEmpty");
 
 const pendingEmpty = document.getElementById("pendingEmpty");
@@ -544,26 +535,21 @@ function formatDate(value) {
   return date.toLocaleString();
 }
 
-function getAvatarUrl(name, profileImage) {
-  if (profileImage) return profileImage;
-  return DEFAULT_AVATAR + encodeURIComponent(name || "User");
-}
-
 function renderAvatar(name, profileImage, size = "large") {
-  const avatarUrl = profileImage;
   const safeName = escapeHtml(name || "User");
   const firstLetter = safeName ? safeName.charAt(0).toUpperCase() : "U";
 
-  if (avatarUrl) {
+  if (profileImage) {
     if (size === "small") {
-      return `<img src="${escapeHtml(avatarUrl)}" alt="${safeName}" class="preview-image">`;
+      return `<img src="${escapeHtml(profileImage)}" alt="${safeName}" class="preview-image">`;
     }
-    return `<img src="${escapeHtml(avatarUrl)}" alt="${safeName}" class="profile-avatar">`;
+    return `<img src="${escapeHtml(profileImage)}" alt="${safeName}" class="profile-avatar">`;
   }
 
   if (size === "small") {
     return `<div class="preview-fallback">${firstLetter}</div>`;
   }
+
   return `<div class="profile-avatar-fallback">${firstLetter}</div>`;
 }
 
@@ -610,16 +596,6 @@ function renderProfileHeader(userData) {
   currentProfileData = userData;
   profileName.innerText = userData.username;
   profileAvatarWrap.innerHTML = renderAvatar(userData.username, userData.profile_image);
-  if (!isViewingOwnProfile() && userData.email) {
-    profileEmail.innerHTML = `<a href="mailto:${escapeHtml(userData.email)}">${escapeHtml(userData.email)}</a>`;
-    profileEmail.style.display = "block";
-  } else if (isViewingOwnProfile() && userData.email) {
-    profileEmail.innerHTML = `<a href="mailto:${escapeHtml(userData.email)}">${escapeHtml(userData.email)}</a>`;
-    profileEmail.style.display = "block";
-  } else {
-    profileEmail.textContent = "";
-    profileEmail.style.display = "none";
-  }
 }
 
 async function uploadProfileImageIfNeeded() {
@@ -717,6 +693,7 @@ async function saveProfileChanges() {
 
 editProfileImage.addEventListener("change", function () {
   const file = this.files && this.files[0];
+
   if (!file) {
     previewWrap.innerHTML = renderAvatar(
       currentProfileData?.username || "User",
@@ -727,14 +704,30 @@ editProfileImage.addEventListener("change", function () {
   }
 
   const reader = new FileReader();
+
   reader.onload = function (e) {
     previewWrap.innerHTML = `<img src="${escapeHtml(e.target.result)}" alt="Preview" class="preview-image">`;
   };
+
   reader.readAsDataURL(file);
 });
 
 function editListing(listingId) {
   window.location.href = `create.html?edit=${listingId}`;
+}
+
+function getStatusBadge(status) {
+  const cleanStatus = (status || "active").toLowerCase();
+
+  if (cleanStatus === "sold") {
+    return `<span class="badge sold">Sold</span>`;
+  }
+
+  if (cleanStatus === "deleted") {
+    return `<span class="badge deleted">Deleted</span>`;
+  }
+
+  return `<span class="badge active">Active</span>`;
 }
 
 function renderListingCard(item, options = {}) {
@@ -746,7 +739,7 @@ function renderListingCard(item, options = {}) {
   const safeTitle = escapeHtml(item.title);
   const safeCategory = escapeHtml(item.category);
   const safeCondition = escapeHtml(item.condition);
-  const safeImage = escapeHtml(item.image);
+  const safeImage = escapeHtml(item.image || "https://picsum.photos/300");
   const safeBuyerEmail = escapeHtml(item.buyer_email || "");
   const safeReturnReason = escapeHtml(item.return_reason || "");
   const safeSellerNote = escapeHtml(item.seller_note || "");
@@ -761,12 +754,21 @@ function renderListingCard(item, options = {}) {
     actionButtons = `
       <div class="btn-row">
         <button class="btn btn-outline" onclick="editListing(${Number(item.id)})">Edit</button>
-        <button class="btn btn-secondary" onclick="markAsSold(${Number(item.id)})">Mark as Sold</button>
+        <button class="btn btn-success" onclick="markAsSold(${Number(item.id)})">Mark as Sold</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="deleteListing(${Number(item.id)})">Delete</button>
       </div>
     `;
   }
 
-  
+  if (!isBoughtItem && isOwnProfile && status === "deleted") {
+    extraInfo += `
+      <div class="note-box">
+        <p class="meta">This listing is hidden from the marketplace.</p>
+      </div>
+    `;
+  }
 
   if (isBoughtItem) {
     if (!returnStatus) {
@@ -777,15 +779,19 @@ function renderListingCard(item, options = {}) {
       `;
     } else {
       extraInfo += `<span class="badge ${escapeHtml(returnStatus)}">Return ${escapeHtml(returnStatus.charAt(0).toUpperCase() + returnStatus.slice(1))}</span>`;
+
       if (safeReturnReason) {
         extraInfo += `<div class="note-box"><p class="meta"><strong>Return Reason:</strong> ${safeReturnReason}</p></div>`;
       }
+
       if (safeSellerNote) {
         extraInfo += `<div class="note-box"><p class="meta"><strong>Seller Response:</strong> ${safeSellerNote}</p></div>`;
       }
+
       if (item.return_created_at) {
         extraInfo += `<p class="meta">Requested: ${escapeHtml(formatDate(item.return_created_at))}</p>`;
       }
+
       if (item.return_reviewed_at) {
         extraInfo += `<p class="meta">Reviewed: ${escapeHtml(formatDate(item.return_reviewed_at))}</p>`;
       }
@@ -799,7 +805,7 @@ function renderListingCard(item, options = {}) {
         <div class="price">$${displayPrice}</div>
         <h3>${safeTitle}</h3>
         <p class="meta">${safeCategory} • ${safeCondition}</p>
-        <span class="badge ${status === "sold" ? "sold" : "active"}">${status === "sold" ? "Sold" : "Active"}</span>
+        ${getStatusBadge(status)}
         ${(!isBoughtItem && isOwnProfile && status === "sold" && safeBuyerEmail) ? `<p class="meta">Buyer: ${safeBuyerEmail}</p>` : ""}
         ${isBoughtItem ? `<p class="meta">Seller: ${escapeHtml(item.seller || "Unknown")}</p>` : ""}
         ${extraInfo}
@@ -813,7 +819,7 @@ function renderReturnRequestCard(item) {
   const safeTitle = escapeHtml(item.title);
   const safeCategory = escapeHtml(item.category);
   const safeCondition = escapeHtml(item.condition);
-  const safeImage = escapeHtml(item.image);
+  const safeImage = escapeHtml(item.image || "https://picsum.photos/300");
   const safeBuyerEmail = escapeHtml(item.buyer_email || "");
   const safeReason = escapeHtml(item.reason || "");
   const safeSellerNote = escapeHtml(item.seller_note || "");
@@ -821,6 +827,7 @@ function renderReturnRequestCard(item) {
   const status = (item.status || "pending").toLowerCase();
 
   let buttons = "";
+
   if (status === "pending") {
     buttons = `
       <div class="btn-row">
@@ -866,6 +873,7 @@ async function loadBoughtItems() {
     const boughtItems = await res.json();
 
     const list = Array.isArray(boughtItems) ? boughtItems : [];
+
     boughtListingsEl.innerHTML = list.map(item => renderListingCard(item, {
       isOwnProfile: false,
       isBoughtItem: true
@@ -908,9 +916,11 @@ async function loadSellerReturnRequests() {
     approvedEmpty.style.display = approved.length ? "none" : "block";
   } catch (err) {
     console.error("Error loading return requests:", err);
+
     pendingReturnRequestsEl.innerHTML = "";
     deniedReturnRequestsEl.innerHTML = "";
     approvedReturnRequestsEl.innerHTML = "";
+
     pendingEmpty.style.display = "block";
     deniedEmpty.style.display = "block";
     approvedEmpty.style.display = "block";
@@ -924,21 +934,20 @@ async function loadProfile() {
   if (!seller) {
     profileName.innerText = "User Not Found";
     profileSub.innerText = "No seller was provided.";
-    profileEmail.textContent = "";
-    profileEmail.style.display = "none";
     profileAvatarWrap.innerHTML = renderAvatar("User", "", "large");
     return;
   }
 
   try {
     const userRes = await fetch(`${API}/api/users/by-username/${encodeURIComponent(seller)}`);
+
     if (userRes.ok) {
       const userData = await userRes.json();
       renderProfileHeader(userData);
 
       profileSub.innerText = isViewingOwnProfile()
-        ? "These are your active listings, sold listings, purchases, and return requests."
-        : `Viewing ${userData.username}'s active and sold listings.`;
+        ? "These are your active listings, sold listings, deleted listings, purchases, and return requests."
+        : `Viewing ${userData.username}'s active, sold, and deleted listings.`;
 
       if (isViewingOwnProfile()) {
         editUsername.value = userData.username || "";
@@ -962,6 +971,10 @@ async function loadProfile() {
       ? listings.filter(item => (item.status || "active").toLowerCase() === "sold")
       : [];
 
+    const deletedListings = Array.isArray(listings)
+      ? listings.filter(item => (item.status || "active").toLowerCase() === "deleted")
+      : [];
+
     activeListingsEl.innerHTML = activeListings.map(item => renderListingCard(item, {
       isOwnProfile: isViewingOwnProfile(),
       isBoughtItem: false
@@ -972,8 +985,14 @@ async function loadProfile() {
       isBoughtItem: false
     })).join("");
 
+    deletedListingsEl.innerHTML = deletedListings.map(item => renderListingCard(item, {
+      isOwnProfile: isViewingOwnProfile(),
+      isBoughtItem: false
+    })).join("");
+
     activeEmpty.style.display = activeListings.length ? "none" : "block";
     soldEmpty.style.display = soldListings.length ? "none" : "block";
+    deletedEmpty.style.display = deletedListings.length ? "none" : "block";
 
     await loadBoughtItems();
     await loadSellerReturnRequests();
@@ -992,6 +1011,7 @@ async function markAsSold(listingId) {
   }
 
   const buyerEmail = prompt("Enter the buyer's email:");
+
   if (!buyerEmail || !buyerEmail.trim()) {
     return;
   }
@@ -1022,15 +1042,17 @@ async function markAsSold(listingId) {
   }
 }
 
-async function markAsActive(listingId) {
+async function deleteListing(listingId) {
   if (!loggedInUser) {
     alert("Please sign in first.");
     return;
   }
 
+  if (!confirm("Move this listing to Deleted Listings?")) return;
+
   try {
-    const res = await fetch(`${API}/api/listings/${listingId}/mark-active`, {
-      method: "PUT",
+    const res = await fetch(`${API}/api/listings/${listingId}`, {
+      method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         user_id: loggedInUser.id,
@@ -1041,11 +1063,11 @@ async function markAsActive(listingId) {
     const data = await res.json();
 
     if (!res.ok) {
-      alert(data.error || "Failed to move listing back to active.");
+      alert(data.error || "Failed to move listing to deleted.");
       return;
     }
 
-    alert("Listing moved back to active.");
+    alert(data.message || "Listing moved to deleted.");
     loadProfile();
   } catch (err) {
     console.error(err);
@@ -1060,6 +1082,7 @@ async function requestReturn(listingId) {
   }
 
   const reason = prompt("Enter the reason for your return:");
+
   if (!reason || !reason.trim()) {
     return;
   }

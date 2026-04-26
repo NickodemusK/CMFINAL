@@ -119,9 +119,7 @@
   </section>
 
   <script>
-    const API = (window.location.protocol === "http:" || window.location.protocol === "https:")
-      ? window.location.origin
-      : "http://localhost:5001";
+    const API = "http://localhost:5001";
     const user = JSON.parse(localStorage.getItem("user") || "null");
 
     if (!user || user.role !== "admin") {

@@ -2,12 +2,12 @@
 import os
 import boto3
 
-aws_region = os.getenv("AWS_REGION", "us-east-2")
-
-# Let boto3 resolve credentials from the environment/instance role chain.
-# This works on Elastic Beanstalk with the EC2 instance profile and avoids
-# hard coupling to static access keys.
-s3 = boto3.client("s3", region_name=aws_region)
+s3 = boto3.client(
+    "s3",
+    region_name=os.getenv("AWS_REGION"),
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+)
 
 BUCKET_NAME = os.getenv("BUCKET_NAME")
-AWS_REGION = aws_region
+AWS_REGION = os.getenv("AWS_REGION")

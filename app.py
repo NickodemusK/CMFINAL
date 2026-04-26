@@ -1,5 +1,4 @@
-# Collaboration from Howard Ames, Nickodemus, and Gemini
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from sshtunnel import SSHTunnelForwarder
 import psycopg
@@ -8,26 +7,22 @@ import os
 import uuid
 from dotenv import load_dotenv
 
-# Load environment variables from .env
 load_dotenv()
 
-# S3 config
 from s3_config import s3, BUCKET_NAME, AWS_REGION
 
 app = Flask(__name__)
 CORS(app)
-FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "Frontend")
 
-# Database & Tunnel Configuration
-SSH_HOST = os.getenv("SSH_HOST", "18.190.235.250")
-SSH_USER = os.getenv("SSH_USER", "ec2-user")
+SSH_HOST = "18.190.235.250"
+SSH_USER = "ec2-user"
 SSH_KEY_PATH = os.path.join(os.path.dirname(__file__), "Resources", "ec2Test.pem")
 
-RDS_HOST = os.getenv("RDS_HOST", "cloudmart3-4.cjy4c6csc3wv.us-east-2.rds.amazonaws.com")
-RDS_PORT = int(os.getenv("RDS_PORT", "5432"))
-DB_NAME = os.getenv("DB_NAME", "cloudmartdb")
-DB_USER = os.getenv("DB_USER", "postgres")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
+RDS_HOST = "cloudmart3-4.cjy4c6csc3wv.us-east-2.rds.amazonaws.com"
+RDS_PORT = 5432
+DB_NAME = "cloudmartdb"
+DB_USER = "postgres"
+DB_PASSWORD = "password"
 
 tunnel = None
 
@@ -73,10 +68,7 @@ def init_db():
     )
     """)
 
-    cur.execute("""
-    ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS profile_image TEXT
-    """)
+    cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_image TEXT")
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS listings (
@@ -93,19 +85,9 @@ def init_db():
     )
     """)
 
-    # Make sure older DBs also get these columns
-    cur.execute("""
-    ALTER TABLE listings
-    ADD COLUMN IF NOT EXISTS seller VARCHAR(100)
-    """)
-    cur.execute("""
-    ALTER TABLE listings
-    ADD COLUMN IF NOT EXISTS buyer_email VARCHAR(255)
-    """)
-    cur.execute("""
-    ALTER TABLE listings
-    ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'
-    """)
+    cur.execute("ALTER TABLE listings ADD COLUMN IF NOT EXISTS seller VARCHAR(100)")
+    cur.execute("ALTER TABLE listings ADD COLUMN IF NOT EXISTS buyer_email VARCHAR(255)")
+    cur.execute("ALTER TABLE listings ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'")
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS wishlist (
@@ -132,30 +114,12 @@ def init_db():
     )
     """)
 
-    cur.execute("""
-    ALTER TABLE return_requests
-    ADD COLUMN IF NOT EXISTS seller_note TEXT
-    """)
-    cur.execute("""
-    ALTER TABLE return_requests
-    ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP
-    """)
+    cur.execute("ALTER TABLE return_requests ADD COLUMN IF NOT EXISTS seller_note TEXT")
+    cur.execute("ALTER TABLE return_requests ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP")
 
     conn.commit()
     cur.close()
     conn.close()
-
-
-@app.route("/", methods=["GET"])
-def serve_root():
-    return send_from_directory(FRONTEND_DIR, "Signin.html")
-
-
-@app.route("/<path:filename>", methods=["GET"])
-def serve_frontend_assets(filename):
-    if filename.startswith("api/"):
-        return jsonify({"error": "Not found"}), 404
-    return send_from_directory(FRONTEND_DIR, filename)
 
 
 # ========================
@@ -217,8 +181,9 @@ def login():
 
 
 # ========================
-# S3 UPLOADS
+# S3 UPLOADS - Nick
 # ========================
+
 @app.route("/api/uploads/presign", methods=["POST", "OPTIONS"])
 def generate_presigned_upload_url():
     if request.method == "OPTIONS":
@@ -255,7 +220,7 @@ def generate_presigned_upload_url():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
+#Nickodemus
 @app.route("/api/uploads/profile-presign", methods=["POST", "OPTIONS"])
 def generate_profile_presigned_upload_url():
     if request.method == "OPTIONS":
@@ -335,8 +300,7 @@ def create_listing():
         cur.close()
         conn.close()
 
-
-# Homepage only shows ACTIVE listings
+#Tyson
 @app.route("/api/listings", methods=["GET"])
 def get_listings():
     conn = get_db_connection()
@@ -352,6 +316,7 @@ def get_listings():
             l.condition,
             l.image,
             COALESCE(NULLIF(l.seller, ''), u.username) AS seller,
+            u.email AS seller_email,
             COALESCE(l.status, 'active') AS status,
             l.buyer_email
         FROM listings l
@@ -373,8 +338,9 @@ def get_listings():
         "condition": r[5],
         "image": r[6],
         "seller": r[7],
-        "status": r[8],
-        "buyer_email": r[9]
+        "seller_email": r[8],
+        "status": r[9],
+        "buyer_email": r[10]
     } for r in rows]), 200
 
 
@@ -393,6 +359,7 @@ def get_listing_by_id(listing_id):
             l.condition,
             l.image,
             COALESCE(NULLIF(l.seller, ''), u.username) AS seller,
+            u.email AS seller_email,
             COALESCE(l.status, 'active') AS status,
             l.buyer_email
         FROM listings l
@@ -416,8 +383,9 @@ def get_listing_by_id(listing_id):
         "condition": row[5],
         "image": row[6],
         "seller": row[7],
-        "status": row[8],
-        "buyer_email": row[9]
+        "seller_email": row[8],
+        "status": row[9],
+        "buyer_email": row[10]
     }), 200
 
 
@@ -430,44 +398,43 @@ def update_listing(listing_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT user_id FROM listings WHERE id = %s", (listing_id,))
-    row = cur.fetchone()
+    try:
+        cur.execute("SELECT user_id, COALESCE(status, 'active') FROM listings WHERE id = %s", (listing_id,))
+        row = cur.fetchone()
 
-    if not row:
+        if not row:
+            return jsonify({"error": "Listing not found"}), 404
+
+        if user_role != "admin" and int(row[0]) != int(user_id):
+            return jsonify({"error": "Forbidden"}), 403
+
+        cur.execute("""
+            UPDATE listings
+            SET title = %s,
+                price = %s,
+                category = %s,
+                condition = %s,
+                image = %s
+            WHERE id = %s
+        """, (
+            data["title"],
+            data["price"],
+            data["category"],
+            data["condition"],
+            data["image"],
+            listing_id
+        ))
+
+        conn.commit()
+        return jsonify({"success": True}), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
         cur.close()
         conn.close()
-        return jsonify({"error": "Listing not found"}), 404
+#Tyson
 
-    if user_role != "admin" and int(row[0]) != int(user_id):
-        cur.close()
-        conn.close()
-        return jsonify({"error": "Forbidden"}), 403
-
-    cur.execute("""
-        UPDATE listings
-        SET title = %s,
-            price = %s,
-            category = %s,
-            condition = %s,
-            image = %s
-        WHERE id = %s
-    """, (
-        data["title"],
-        data["price"],
-        data["category"],
-        data["condition"],
-        data["image"],
-        listing_id
-    ))
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({"success": True}), 200
-
-
-# Mark listing as sold + store buyer email
 @app.route("/api/listings/<int:listing_id>/mark-sold", methods=["PUT"])
 def mark_listing_sold(listing_id):
     data = request.get_json()
@@ -491,8 +458,13 @@ def mark_listing_sold(listing_id):
         if user_role != "admin" and int(row[0]) != int(user_id):
             return jsonify({"error": "Forbidden"}), 403
 
-        if row[1].lower() == "sold":
+        current_status = (row[1] or "active").lower()
+
+        if current_status == "sold":
             return jsonify({"error": "Listing is already sold"}), 400
+
+        if current_status == "deleted":
+            return jsonify({"error": "Deleted listings cannot be marked as sold"}), 400
 
         cur.execute("SELECT id, email FROM users WHERE LOWER(email) = LOWER(%s)", (buyer_email,))
         buyer_row = cur.fetchone()
@@ -522,7 +494,6 @@ def mark_listing_sold(listing_id):
         conn.close()
 
 
-# Optional: mark sold listing back to active
 @app.route("/api/listings/<int:listing_id>/mark-active", methods=["PUT"])
 def mark_listing_active(listing_id):
     data = request.get_json()
@@ -532,61 +503,81 @@ def mark_listing_active(listing_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT user_id FROM listings WHERE id = %s", (listing_id,))
-    row = cur.fetchone()
+    try:
+        cur.execute("SELECT user_id, COALESCE(status, 'active') FROM listings WHERE id = %s", (listing_id,))
+        row = cur.fetchone()
 
-    if not row:
+        if not row:
+            return jsonify({"error": "Listing not found"}), 404
+
+        if user_role != "admin" and int(row[0]) != int(user_id):
+            return jsonify({"error": "Forbidden"}), 403
+
+        current_status = (row[1] or "active").lower()
+
+        if current_status == "deleted":
+            return jsonify({"error": "Deleted listings cannot be moved directly back to active"}), 400
+
+        cur.execute("""
+            UPDATE listings
+            SET status = 'active',
+                buyer_email = NULL
+            WHERE id = %s
+        """, (listing_id,))
+
+        conn.commit()
+        return jsonify({"success": True, "message": "Listing moved back to active"}), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
         cur.close()
         conn.close()
-        return jsonify({"error": "Listing not found"}), 404
 
-    if user_role != "admin" and int(row[0]) != int(user_id):
-        cur.close()
-        conn.close()
-        return jsonify({"error": "Forbidden"}), 403
-
-    cur.execute("""
-        UPDATE listings
-        SET status = 'active',
-            buyer_email = NULL
-        WHERE id = %s
-    """, (listing_id,))
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({"success": True, "message": "Listing moved back to active"}), 200
-
-
+#Ayinde
 @app.route("/api/listings/<int:listing_id>", methods=["DELETE"])
 def delete_listing(listing_id):
-    data = request.get_json()
+    data = request.get_json() or {}
     user_id = data.get("user_id")
     user_role = data.get("role")
 
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT user_id FROM listings WHERE id = %s", (listing_id,))
-    row = cur.fetchone()
+    try:
+        cur.execute("SELECT user_id, COALESCE(status, 'active') FROM listings WHERE id = %s", (listing_id,))
+        row = cur.fetchone()
 
-    if not row:
+        if not row:
+            return jsonify({"error": "Listing not found"}), 404
+
+        if user_role != "admin" and int(row[0]) != int(user_id):
+            return jsonify({"error": "Forbidden"}), 403
+
+        current_status = (row[1] or "active").lower()
+
+        if current_status == "deleted":
+            return jsonify({"success": True, "message": "Listing is already deleted"}), 200
+
+        cur.execute("""
+            UPDATE listings
+            SET status = 'deleted',
+                buyer_email = NULL
+            WHERE id = %s
+        """, (listing_id,))
+
+        conn.commit()
+        return jsonify({"success": True, "message": "Deleted"}), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
         cur.close()
         conn.close()
-        return jsonify({"error": "Listing not found"}), 404
-
-    if user_role != "admin" and int(row[0]) != int(user_id):
-        cur.close()
-        conn.close()
-        return jsonify({"error": "Forbidden"}), 403
-
-    cur.execute("DELETE FROM listings WHERE id = %s", (listing_id,))
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({"success": True}), 200
 
 
 # ========================
@@ -688,7 +679,6 @@ def update_user_profile(user_id):
         conn.close()
 
 
-# Seller page should show BOTH active and sold
 @app.route("/api/listings/by-seller/<username>", methods=["GET"])
 def get_listings_by_seller(username):
     conn = get_db_connection()
@@ -704,6 +694,7 @@ def get_listings_by_seller(username):
             l.condition,
             l.image,
             COALESCE(NULLIF(l.seller, ''), u.username) AS seller,
+            u.email AS seller_email,
             COALESCE(l.status, 'active') AS status,
             l.buyer_email
         FROM listings l
@@ -725,12 +716,12 @@ def get_listings_by_seller(username):
         "condition": r[5],
         "image": r[6],
         "seller": r[7],
-        "status": r[8],
-        "buyer_email": r[9]
+        "seller_email": r[8],
+        "status": r[9],
+        "buyer_email": r[10]
     } for r in rows]), 200
 
-
-# Bought items for the logged-in buyer, including return status if one exists
+#Nickodemus
 @app.route("/api/listings/bought/<path:buyer_email>", methods=["GET"])
 def get_bought_items(buyer_email):
     conn = get_db_connection()
@@ -817,11 +808,7 @@ def create_return_request():
     cur = conn.cursor()
 
     try:
-        cur.execute("""
-            SELECT id, email
-            FROM users
-            WHERE id = %s
-        """, (buyer_id,))
+        cur.execute("SELECT id, email FROM users WHERE id = %s", (buyer_id,))
         buyer_row = cur.fetchone()
 
         if not buyer_row:
@@ -885,7 +872,7 @@ def create_return_request():
         cur.close()
         conn.close()
 
-
+#Nickodemus
 @app.route("/api/returns/seller/<int:seller_id>", methods=["GET"])
 def get_return_requests_for_seller(seller_id):
     conn = get_db_connection()
@@ -1021,10 +1008,18 @@ def get_wishlist():
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT l.id, l.user_id, l.title, l.price, l.category, l.condition, l.image,
-               COALESCE(NULLIF(l.seller, ''), u.username) AS seller,
-               COALESCE(l.status, 'active') AS status,
-               l.buyer_email
+        SELECT
+            l.id,
+            l.user_id,
+            l.title,
+            l.price,
+            l.category,
+            l.condition,
+            l.image,
+            COALESCE(NULLIF(l.seller, ''), u.username) AS seller,
+            u.email AS seller_email,
+            COALESCE(l.status, 'active') AS status,
+            l.buyer_email
         FROM wishlist w
         JOIN listings l ON w.listing_id = l.id
         LEFT JOIN users u ON l.user_id = u.id
@@ -1046,8 +1041,9 @@ def get_wishlist():
         "condition": r[5],
         "image": r[6],
         "seller": r[7],
-        "status": r[8],
-        "buyer_email": r[9]
+        "seller_email": r[8],
+        "status": r[9],
+        "buyer_email": r[10]
     } for r in rows]), 200
 
 
@@ -1097,8 +1093,8 @@ def remove_from_wishlist(listing_id):
         DELETE FROM wishlist
         WHERE user_id = %s AND listing_id = %s
     """, (user_id, listing_id))
-    conn.commit()
 
+    conn.commit()
     cur.close()
     conn.close()
 
@@ -1154,6 +1150,25 @@ def get_admin_dashboard():
         """)
         listing_rows = cur.fetchall()
 
+        cur.execute("""
+            SELECT
+                rr.id,
+                rr.listing_id,
+                l.title,
+                rr.seller_id,
+                rr.buyer_id,
+                rr.buyer_email,
+                rr.reason,
+                rr.status,
+                rr.seller_note,
+                rr.created_at,
+                rr.reviewed_at
+            FROM return_requests rr
+            LEFT JOIN listings l ON rr.listing_id = l.id
+            ORDER BY rr.created_at DESC
+        """)
+        return_request_rows = cur.fetchall()
+
         return jsonify({
             "summary": {
                 "total_users": total_users,
@@ -1184,6 +1199,22 @@ def get_admin_dashboard():
                     "buyer_email": r[8]
                 }
                 for r in listing_rows
+            ],
+            "return_requests": [
+                {
+                    "id": r[0],
+                    "listing_id": r[1],
+                    "title": r[2],
+                    "seller_id": r[3],
+                    "buyer_id": r[4],
+                    "buyer_email": r[5],
+                    "reason": r[6],
+                    "status": r[7],
+                    "seller_note": r[8],
+                    "created_at": str(r[9]) if r[9] else None,
+                    "reviewed_at": str(r[10]) if r[10] else None
+                }
+                for r in return_request_rows
             ]
         }), 200
 
@@ -1195,7 +1226,6 @@ def get_admin_dashboard():
         conn.close()
 
 
-init_db()
-
 if __name__ == "__main__":
+    init_db()
     app.run(port=5001, debug=True)

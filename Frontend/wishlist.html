@@ -135,7 +135,7 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
     <img src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Logo.png" class="logo" />
     <span>CloudMart</span>
   </a>
-
+   /* Tyson */
   <div class="nav-menu">
     <a href="./index.html" class="btn btn-outline">← Back to Marketplace</a>
     <a href="./create.html" class="btn btn-primary">+ Sell Item</a>
@@ -161,9 +161,7 @@ body { font-family: system-ui, Arial, sans-serif; background: #0b1020; color: #f
 </main>
 
 <script>
-const API = (window.location.protocol === "http:" || window.location.protocol === "https:")
-  ? window.location.origin
-  : "http://localhost:5001";
+const API = "http://localhost:5001";
 
 const user = JSON.parse(localStorage.getItem("user") || "null");
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
@@ -219,6 +217,7 @@ function renderWishlist(data) {
           <h3 class="card-title">${item.title}</h3>
           <p class="condition">${item.category} • ${item.condition}</p>
           <p class="seller">Sold by: ${item.seller || 'Unknown'}</p>
+          <p class="seller">Email: ${item.seller_email || 'No email available'}</p>
           <div class="card-actions">
             <button onclick="addToCart(${item.id})" class="btn btn-primary">Add to Cart</button>
             <button onclick="removeFromWishlist(${item.id})" class="btn btn-danger">Remove</button>
