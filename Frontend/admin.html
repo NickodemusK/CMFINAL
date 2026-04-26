@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CloudMart Admin Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin:0; padding:0; }
+
+    body {
+      font-family: system-ui, Arial, sans-serif;
+      background: #0b1020;
+      color: #fff;
+      line-height: 1.5;
+      padding: 20px;
+    }
+
+    .site-header {
+      background: #111827;
+      padding: 12px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .title-wrap h1 {
+      font-size: 1.5rem;
+      margin-bottom: 4px;
+    }
+
+    .muted {
+      color: #9ca3af;
+      font-size: 0.95rem;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+      border: none;
+    }
+
+    .btn:hover { opacity: 0.85; }
+
+    .btn-outline {
+      border: 1px solid white;
+      background: transparent;
+      color: white;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .metric-btn {
+      background: #111827;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 18px;
+      text-align: left;
+      cursor: pointer;
+      color: white;
+      transition: 0.2s;
+    }
+
+    .metric-btn:hover {
+      transform: translateY(-2px);
+      border-color: rgba(147,197,253,0.7);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    }
+
+    .metric-btn h3 {
+      font-size: 1rem;
+      margin-bottom: 10px;
+      color: #9ca3af;
+    }
+
+    .metric-value {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #93c5fd;
+    }
+
+    .panel {
+      background: #111827;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(255,255,255,0.1);
+      overflow-x: auto;
+    }
+
+    .panel h2 {
+      margin-bottom: 14px;
+      font-size: 1.2rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 0.95rem;
+      vertical-align: top;
+    }
+
+    th {
+      color: #93c5fd;
+      font-weight: 700;
+      background: rgba(255,255,255,0.03);
+    }
+
+    tr:hover td {
+      background: rgba(255,255,255,0.03);
+    }
+
+    @media (max-width: 1000px) {
+      .metrics-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .site-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="title-wrap">
+      <h1>CloudMart Admin Dashboard</h1>
+      <p class="muted">Admin-only metrics and database overview</p>
+    </div>
+    <button class="btn btn-outline" onclick="goHome()">← Back to Marketplace</button>
+  </header>
+
+  <section class="metrics-grid">
+    <button class="metric-btn" onclick="goToAllListings()">
+      <h3>Total Listings</h3>
+      <div id="totalListings" class="metric-value">0</div>
+    </button>
+
+    <button class="metric-btn" onclick="goToAllUsers()">
+      <h3>Total Users</h3>
+      <div id="totalUsers" class="metric-value">0</div>
+    </button>
+
+    <button class="metric-btn" onclick="goToSoldListings()">
+      <h3>Total Sold</h3>
+      <div id="totalSold" class="metric-value">0</div>
+    </button>
+
+    <button class="metric-btn" onclick="showTotalValue()">
+      <h3>Total Listing Value</h3>
+      <div id="totalValue" class="metric-value">$0.00</div>
+    </button>
+  </section>
+
+  <section class="panel">
+    <h2>Listings</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>User ID</th>
+          <th>Title</th>
+          <th>Price</th>
+          <th>Category</th>
+          <th>Condition</th>
+          <th>Seller</th>
+          <th>Status</th>
+          <th>Buyer Email</th>
+        </tr>
+      </thead>
+      <tbody id="listingsTable"></tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>Users</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Email</th>
+          <th>Username</th>
+          <th>Role</th>
+          <th>Created At</th>
+        </tr>
+      </thead>
+      <tbody id="usersTable"></tbody>
+    </table>
+  </section>
+
+  <script>
+    const API = (window.location.protocol === "http:" || window.location.protocol === "https:")
+      ? window.location.origin
+      : "http://localhost:5001";
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+
+    if (!user || user.role !== "admin") {
+      alert("Access denied. Admins only.");
+      window.location.href = "Signin.html";
+    }
+
+    function goHome() {
+      window.location.href = "index.html";
+    }
+
+    function goToAllListings() {
+      window.location.href = "admin-listings.html";
+    }
+
+    function goToAllUsers() {
+      window.location.href = "admin-users.html";
+    }
+
+    function goToSoldListings() {
+      window.location.href = "admin-sold.html";
+    }
+
+    function showTotalValue() {
+      alert("This shows the total dollar value of all listings in the database.");
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    async function loadAdminDashboard() {
+      try {
+        const res = await fetch(`${API}/api/admin/dashboard?role=${encodeURIComponent(user.role)}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to load admin dashboard");
+        }
+
+        document.getElementById("totalUsers").innerText = data.summary.total_users;
+        document.getElementById("totalListings").innerText = data.summary.total_listings;
+        document.getElementById("totalSold").innerText = data.summary.total_sold;
+        document.getElementById("totalValue").innerText = `$${Number(data.summary.total_value).toFixed(2)}`;
+
+        const listingsTable = document.getElementById("listingsTable");
+        listingsTable.innerHTML = "";
+
+        data.listings.forEach(l => {
+          listingsTable.innerHTML += `
+            <tr>
+              <td>${l.id}</td>
+              <td>${l.user_id}</td>
+              <td>${escapeHtml(l.title)}</td>
+              <td>$${Number(l.price).toFixed(2)}</td>
+              <td>${escapeHtml(l.category)}</td>
+              <td>${escapeHtml(l.condition)}</td>
+              <td>${escapeHtml(l.seller)}</td>
+              <td>${escapeHtml(l.status)}</td>
+              <td>${escapeHtml(l.buyer_email || "")}</td>
+            </tr>
+          `;
+        });
+
+        const usersTable = document.getElementById("usersTable");
+        usersTable.innerHTML = "";
+
+        data.users.forEach(u => {
+          usersTable.innerHTML += `
+            <tr>
+              <td>${u.id}</td>
+              <td>${escapeHtml(u.email)}</td>
+              <td>${escapeHtml(u.username)}</td>
+              <td>${escapeHtml(u.role)}</td>
+              <td>${escapeHtml(u.created_at)}</td>
+            </tr>
+          `;
+        });
+
+      } catch (err) {
+        console.error(err);
+        alert(err.message);
+      }
+    }
+
+    loadAdminDashboard();
+  </script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CloudMart | Sign in</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Strictly Dark Mode - No white backgrounds */
+    html, body {
+      background-color: #0b1020;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      background: #111;
+      border-bottom: 1px solid #1e2438;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #fff;
+      font-weight: 700;
+    }
+    .nav-logo { max-height: 36px; }
+    .page {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .card {
+      background: #111;
+      padding: 30px;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 350px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+      border: 1px solid #1e2438;
+    }
+    h1 { text-align: center; margin-bottom: 20px; font-size: 24px; }
+    .sub { font-size: 14px; color: #8892b0; text-align: center; margin-bottom: 25px; }
+    label { display: block; font-size: 13px; margin-bottom: 8px; color: #ccd6f6; }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      border: 1px solid #233554;
+      background: #1e2438;
+      color: #fff;
+      box-sizing: border-box;
+      outline: none;
+    }
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: #007bff;
+      border: none;
+      color: #fff;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    .btn:hover { background: #0056b3; }
+    .row {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 13px;
+      margin-top: 15px;
+      text-align: center;
+    }
+    .row a { color: #007bff; text-decoration: none; }
+    .admin-link {
+      display: block;
+      margin-top: 20px;
+      font-size: 11px;
+      color: #8892b0;
+      text-decoration: none;
+      border-top: 1px solid #1e2438;
+      padding-top: 15px;
+    }
+    .msg { margin-top: 15px; font-size: 13px; text-align: center; min-height: 20px; }
+    .msg.error { color: #ff6b6b; }
+    .msg.success { color: #4ade80; }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <a href="index.html" class="brand">
+      <img src="https://cloudmart-images.s3.us-east-2.amazonaws.com/Logo.png" class="nav-logo" alt="CloudMart Logo">
+      <span>CloudMart</span>
+    </a>
+  </header>
+
+  <main class="page">
+    <section class="card">
+      <h1 id="modeTitle">Sign in</h1>
+      <p class="sub" id="modeSub">Enter your username and password to continue.</p>
+
+      <div id="emailWrap" style="display:none;">
+        <label>Hampton Email</label>
+        <input id="email" type="email" placeholder="user@my.hamptonu.edu">
+      </div>
+
+      <label>Username</label>
+      <input id="username" type="text" placeholder="Username">
+
+      <label>Password</label>
+      <input id="password" type="password" placeholder="Password">
+
+      <button class="btn" id="primaryBtn">Sign in</button>
+
+      <div class="row">
+        <a href="#" id="toggleMode">Need an account? Create one</a>
+        <a href="admin.html" class="admin-link">Create Admin Account</a>
+      </div>
+
+      <div id="message" class="msg"></div>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = (window.location.protocol === "http:" || window.location.protocol === "https:")
+      ? window.location.origin
+      : "http://localhost:5001";
+    const emailWrap = document.getElementById("emailWrap");
+    const modeTitle = document.getElementById("modeTitle");
+    const modeSub = document.getElementById("modeSub");
+    const toggleMode = document.getElementById("toggleMode");
+    const primaryBtn = document.getElementById("primaryBtn");
+    const message = document.getElementById("message");
+
+    let isCreateMode = false;
+
+    function setMsg(text, isError = true) {
+      message.innerText = text;
+      message.className = "msg " + (isError ? "error" : "success");
+    }
+
+    toggleMode.addEventListener("click", (e) => {
+      e.preventDefault();
+      isCreateMode = !isCreateMode;
+      emailWrap.style.display = isCreateMode ? "block" : "none";
+      modeTitle.innerText = isCreateMode ? "Create Account" : "Sign in";
+      primaryBtn.innerText = isCreateMode ? "Register" : "Sign in";
+      toggleMode.innerText = isCreateMode ? "Already have an account? Sign in" : "Need an account? Create one";
+    });
+
+    primaryBtn.addEventListener("click", async () => {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+      const email = document.getElementById("email").value.trim();
+
+      if (!username || !password) return setMsg("Username and password required.");
+      
+      try {
+        const endpoint = isCreateMode ? "/api/auth/register" : "/api/auth/login";
+        const body = { username, password };
+        
+        if (isCreateMode) {
+          if (!email.toLowerCase().endsWith("@my.hamptonu.edu")) {
+            throw new Error("Hampton email required.");
+          }
+          body.email = email;
+          body.role = "user";
+        }
+
+        const res = await fetch(API_BASE + endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Request failed");
+
+        if (!isCreateMode) {
+          // Store entire user object to include roles for index.html
+          localStorage.setItem("user", JSON.stringify(data.user));
+          window.location.href = "index.html";
+        } else {
+          setMsg("Account created! Please sign in.", false);
+          toggleMode.click();
+        }
+      } catch (err) { 
+        setMsg(err.message); 
+      }
+    });
+  </script>
+</body>
+</html>

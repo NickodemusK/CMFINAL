@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create Listing</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0b1020;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .create-container {
+      background: #111;
+      padding: 30px;
+      border-radius: 10px;
+      width: 350px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .create-container h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .create-container input,
+    .create-container select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: none;
+      background: #1e2438;
+      color: #fff;
+      box-sizing: border-box;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 10px;
+      background: #007bff;
+      border: none;
+      color: #fff;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .btn-primary:hover {
+      background: #0056b3;
+    }
+
+    .top-links {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .top-links a {
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .back-link {
+      color: #007bff;
+    }
+
+    .signout-link {
+      color: #ff6b6b;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="create-container">
+    <div class="top-links">
+      <a href="./index.html" class="back-link">← Back to Home</a>
+      <a href="#" class="signout-link" onclick="signOut()">Sign Out</a>
+    </div>
+
+    <h2 id="pageTitle">Create Listing</h2>
+
+    <input id="title" placeholder="Title" />
+    <input id="price" placeholder="Price" type="number" step="0.01" />
+
+    <select id="category">
+      <option>Electronics</option>
+      <option>Books</option>
+      <option>Furniture</option>
+      <option>Appliances</option>
+    </select>
+
+    <select id="condition">
+      <option>New</option>
+      <option>Used</option>
+    </select>
+
+    <input id="image" type="file" accept="image/*" />
+
+    <button class="btn-primary" id="submitBtn" onclick="submitListing()">Create</button>
+  </div>
+
+  <script>
+    const API = (window.location.protocol === "http:" || window.location.protocol === "https:")
+      ? window.location.origin
+      : "http://localhost:5001";
+
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get("edit");
+    const isEditMode = !!editId;
+
+    const pageTitle = document.getElementById("pageTitle");
+    const submitBtn = document.getElementById("submitBtn");
+
+    if (isEditMode) {
+      pageTitle.innerText = "Edit Listing";
+      submitBtn.innerText = "Update";
+      loadListingForEdit();
+    }
+
+    function signOut() {
+      localStorage.removeItem("user");
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("currentUser");
+      localStorage.removeItem("userId");
+      window.location.href = "signin.html";
+    }
+
+    async function uploadImageToS3(file) {
+      const presignRes = await fetch(`${API}/api/uploads/presign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName: file.name, fileType: file.type })
+      });
+
+      if (!presignRes.ok) {
+        const errText = await presignRes.text();
+        throw new Error("Failed to get presigned URL: " + errText);
+      }
+
+      const { uploadUrl, imageUrl } = await presignRes.json();
+
+      const uploadRes = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file
+      });
+
+      if (!uploadRes.ok) {
+        const errText = await uploadRes.text();
+        throw new Error("Failed to upload image to S3: " + errText);
+      }
+
+      return imageUrl;
+    }
+
+    async function loadListingForEdit() {
+      try {
+        const res = await fetch(`${API}/api/listings/${editId}`);
+        const listing = await res.json();
+
+        if (!res.ok) throw new Error(listing.error || "Failed to load listing");
+
+        document.getElementById("title").value = listing.title || "";
+        document.getElementById("price").value = listing.price ?? "";
+        document.getElementById("category").value = listing.category || "Electronics";
+        document.getElementById("condition").value = listing.condition || "Used";
+
+        window.currentImage = listing.image || "https://picsum.photos/300";
+      } catch (err) {
+        console.error("Error loading listing:", err);
+        alert("Error loading listing: " + err.message);
+      }
+    }
+
+    async function submitListing() {
+      const user = JSON.parse(localStorage.getItem("user") || "null");
+
+      if (!user || !user.id) {
+        alert("You must be logged in to continue.");
+        return;
+      }
+
+      const title = document.getElementById("title").value.trim();
+      const price = parseFloat(document.getElementById("price").value);
+      const category = document.getElementById("category").value;
+      const condition = document.getElementById("condition").value;
+      const imageFile = document.getElementById("image").files[0];
+
+      if (!title || isNaN(price)) {
+        alert("Please enter a valid title and price.");
+        return;
+      }
+
+      let imageUrl = window.currentImage || "https://picsum.photos/300";
+
+      try {
+        if (imageFile) {
+          imageUrl = await uploadImageToS3(imageFile);
+        }
+
+        const listing = {
+          user_id: Number(user.id),
+          title: title,
+          price: price,
+          category: category,
+          condition: condition,
+          image: imageUrl
+        };
+
+        let res;
+        const endpoint = isEditMode ? `${API}/api/listings/${editId}` : `${API}/api/listings`;
+        const method = isEditMode ? "PUT" : "POST";
+
+        res = await fetch(endpoint, {
+          method: method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(listing)
+        });
+
+        if (res.ok) {
+          alert(isEditMode ? "Listing updated successfully!" : "Listing created successfully!");
+          window.location.href = "index.html";
+        } else {
+          const errText = await res.text();
+          throw new Error(errText);
+        }
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
