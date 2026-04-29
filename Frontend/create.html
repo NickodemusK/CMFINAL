@@ -109,7 +109,9 @@
   </div>
 
   <script>
-    const API = "http://localhost:5001";
+    const API = (window.location.protocol === "http:" || window.location.protocol === "https:")
+      ? window.location.origin
+      : "http://localhost:5001";
 
     const params = new URLSearchParams(window.location.search);
     const editId = params.get("edit");

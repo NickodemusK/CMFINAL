@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from sshtunnel import SSHTunnelForwarder
 import psycopg
@@ -14,15 +14,17 @@ from s3_config import s3, BUCKET_NAME, AWS_REGION
 app = Flask(__name__)
 CORS(app)
 
-SSH_HOST = "18.190.235.250"
-SSH_USER = "ec2-user"
+SSH_HOST = os.getenv("SSH_HOST", "18.190.235.250")
+SSH_USER = os.getenv("SSH_USER", "ec2-user")
 SSH_KEY_PATH = os.path.join(os.path.dirname(__file__), "Resources", "ec2Test.pem")
 
-RDS_HOST = "cloudmart3-4.cjy4c6csc3wv.us-east-2.rds.amazonaws.com"
-RDS_PORT = 5432
-DB_NAME = "cloudmartdb"
-DB_USER = "postgres"
-DB_PASSWORD = "password"
+RDS_HOST = os.getenv("RDS_HOST", "cloudmart3-4.cjy4c6csc3wv.us-east-2.rds.amazonaws.com")
+RDS_PORT = int(os.getenv("RDS_PORT", "5432"))
+DB_NAME = os.getenv("DB_NAME", "cloudmartdb")
+DB_USER = os.getenv("DB_USER", "postgres")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
+
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "Frontend")
 
 tunnel = None
 
@@ -1226,6 +1228,19 @@ def get_admin_dashboard():
         conn.close()
 
 
+@app.route("/", methods=["GET"])
+def serve_root():
+    return send_from_directory(FRONTEND_DIR, "Signin.html")
+
+
+@app.route("/<path:filename>", methods=["GET"])
+def serve_frontend_assets(filename):
+    if filename.startswith("api/"):
+        return jsonify({"error": "Not found"}), 404
+    return send_from_directory(FRONTEND_DIR, filename)
+
+
+init_db()
+
 if __name__ == "__main__":
-    init_db()
     app.run(port=5001, debug=True)
